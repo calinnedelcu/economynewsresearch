@@ -1,6 +1,13 @@
 # Studiu știri online vs prețuri (EUR/USD + Nasdaq-100)
 
-Plan complet în `Plan_proiect_economie.docx`. Perioada: 24 mar 2025 → 21 apr 2026, intraday.
+Perioada: 24 mar 2025 → 21 apr 2026, intraday.
+
+## 📄 Documente
+
+- 📋 [Plan proiect](docs/Plan_proiect_economie.md) — scope, ipoteze, pipeline, timeline 8 săpt
+- 📝 [Structura paper](docs/Structura_paper.md) — schema research paper EN (8-12 pag, APA 7)
+
+Versiunile `.docx` originale sunt în [docs/](docs/).
 
 ## Structură
 
