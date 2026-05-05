@@ -1,0 +1,13 @@
+# Etapa 1-2: stdlib only.
+# Etapa 3 (prețuri):
+#   dukascopy-python
+#   alpha-vantage
+#   yfinance
+# Etapa 4 (sentiment):
+#   anthropic
+# Etapa 5 (analiză):
+#   pandas
+#   numpy
+#   scipy
+#   statsmodels
+#   matplotlib

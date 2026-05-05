@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Data exports (large, kept local only)
+data/
+outputs/
+FinancialJuice*.json
+*.csv
+prices_*.parquet
+
+# Secrets / API keys
+.env
+.env.local
+*.key
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code (local AI assistant config — never push)
+.claude/
+.claude.json
+CLAUDE.md
+
+# Allow this in case we need to track requirements/config
+!requirements.txt
