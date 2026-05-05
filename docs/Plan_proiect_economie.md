@@ -12,27 +12,55 @@
 - **Evenimente incluse:** tweets Trump, breaking geopolitic, declarații Fed/BCE surpriză, alte mesaje publice neașteptate
 - **Evenimente EXCLUSE:** date macro programate (`$MACRO` + pattern ACTUAL/FORECAST) — sunt în calendarul economic
 
-## Ce testăm (3 ipoteze)
+## Ce testăm (14 ipoteze)
 
-### H1
-Evenimentele neașteptate produc mișcări semnificative statistic peste volatilitatea normală.
+### Ipoteze principale (H1-H4)
 
-**Test:** t-test pe |Δ%| în fereastra [0, +15m] vs distribuția în ferestre random din zile fără evenimente. Prag p < 0.05.
+**H1** — Evenimentele neașteptate produc mișcări semnificative statistic peste volatilitatea normală.
+*Test:* t-test + Mann-Whitney U pe |Δ%| events vs random baseline windows.
 
-### H2
-Direcția sentimentului (bull/bear/neutral pt USD și Nasdaq) se corelează cu direcția prețului peste nivelul de hazard (>50%).
+**H2** — Direcția sentimentului se corelează cu direcția prețului peste nivelul de hazard (>50%).
+*Test:* matrice confuzie 3×3 + test binomial.
 
-**Test:** matrice confuzie + test binomial pt respingerea hazardului 33%/50%.
+**H3** — Trendul zilei moderează impactul știrii (interacțiune sentiment × trend).
+*Test:* OLS `|Δ%| = β₀ + β₁·sentiment + β₂·trend_zi + β₃·(sentiment × trend_zi) + ε`; testăm β₃.
 
-### H3
-Trendul zilei moderează impactul știrii (momentum > news).
+**H4** — Sentimentul agregat al știrilor în perioadele de piață închisă prezice direcția gap-ului de redeschidere.
+*Test:* OLS `gap_pct ~ aggregate_sentiment` per-asset (weekend FX + overnight NDX).
 
-**Test:** regresie `|Δ%| = β₀ + β₁·sentiment + β₂·trend_zi + β₃·(sentiment × trend_zi) + ε`; testăm β₃.
+### Ipoteze suplimentare (H5-H14)
 
-### H4 (extensie)
-Sentimentul agregat al știrilor în perioadele de piață închisă prezice direcția gap-ului de redeschidere.
+**H5** — `expected_magnitude` (low/med/high) corelează cu |Δ%| realizat.
+*Test:* ANOVA + post-hoc Tukey.
 
-**Test:** regresie OLS `gap_pct ~ aggregate_sentiment + prior_trend + interaction`. Per-asset (FX vs NDX au schedule diferit).
+**H6** — Modelul are confidence calibrat (probabilitatea spusă coincide cu hit rate observat).
+*Test:* Brier score + reliability diagram (buckets de confidence).
+
+**H7** — Categoriile diferite produc magnitudini diferite.
+*Test:* ANOVA `|Δ%| ~ category` + per-category mean ranking.
+
+**H8** — Pre-event drift / market efficiency: există mișcare anticipativă (information leakage)?
+*Test:* `|Δ%[-15m, 0]|` events vs random baseline (paired t-test + MWU).
+
+**H9** — News impact persistă vs decade — half-life analysis.
+*Test:* sign agreement între ferestre +15m și +4h, ratio magnitudine.
+
+**H10** — Volume reaction la events (volume_ratio events vs baseline).
+*Test:* Wilcoxon signed-rank vs ratio=1 (one-sided greater).
+
+**H11** — Time-of-day moderează impactul.
+*Test:* ANOVA pe `hour_utc` + `day_of_week`.
+
+**H12** — Asimetrie bear vs bull (loss aversion / fear premium).
+*Test:* `|Δ%|_bear` vs `|Δ%|_bull` (t-test + MWU one-sided).
+
+**H13** — `surprise_level` (expected/surprise/shock) corelează cu magnitudinea.
+*Test:* ANOVA `|Δ%| ~ surprise_level`.
+
+**H14** — Cross-asset spillover NDX × EUR/USD.
+*Test:* per-event Pearson + Spearman correlation; sign-match rate (binomial test).
+
+**Methodology control (Lopez-Lira et al. 2025):** F1 split pre-cutoff (înainte ian 2026) vs post-cutoff. Raportat în Methodology pentru a controla memorization risk.
 
 ## Surse de date
 
@@ -68,7 +96,13 @@ python parse_fj_discord.py export.json -o events.csv --summary
 ### 4. Sentiment cu LLM API
 - Script Python cu OpenAI SDK (DeepSeek-compatible); model `deepseek-v4-flash`
 - Prompt: rol analist FX + definiții clase + 8 exemple few-shot + output JSON strict
-- Per eveniment: `sentiment_usd`, `sentiment_ndx` (bull/bear/neutral), `expected_magnitude` (low/med/high), `confidence` (0-1), `rationale`
+- Per eveniment (schemă extinsă):
+  - `sentiment_usd`, `sentiment_ndx` ∈ {bull, bear, neutral}
+  - `directional_strength_usd`, `directional_strength_ndx` ∈ [-1, +1] (continuous, captures intensitate)
+  - `expected_magnitude` ∈ {low, med, high}
+  - `surprise_level` ∈ {expected, surprise, shock}
+  - `confidence` ∈ [0, 1]
+  - `rationale` (text)
 - Caching local SQLite pe hash(text+system+model) pentru rerulare ieftină
 - **Cost estimat: ~$0.20 pentru toate ~1000 evenimentele gold**
 - Validare: 200 evenimente etichetate manual de 2 membri → calcul F1 vs LLM; accept dacă F1 ≥ 0.75

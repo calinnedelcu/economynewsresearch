@@ -135,6 +135,244 @@ def plot_h2(h2_df):
     return fig
 
 
+def plot_h5_magnitude(h5_df, returns_df):
+    if h5_df.empty:
+        return None
+    sub_15 = h5_df[h5_df["window_min"] == 15]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    for ax, asset in zip(axes, ASSETS):
+        row = sub_15[sub_15["asset"] == asset]
+        if row.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        r = row.iloc[0]
+        means = [r["mean_low"], r["mean_med"], r["mean_high"]]
+        ns = [int(r["n_low"]), int(r["n_med"]), int(r["n_high"])]
+        bars = ax.bar(["low", "med", "high"], means, color=["#7fb3d5", "#f4a261", "#e63946"])
+        for i, b in enumerate(bars):
+            ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
+                    f"n={ns[i]}", ha="center", va="bottom", fontsize=9)
+        ax.set_title(f"{asset.upper()} +15m — |Δ%| by predicted magnitude\n(ANOVA p={r['p_anova']:.4g})")
+        ax.set_ylabel("mean |Δ%|")
+        ax.grid(True, axis="y", alpha=0.3)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h6_calibration(h6_df):
+    if h6_df.empty:
+        return None
+    fig, ax = plt.subplots(figsize=(6.5, 5))
+    xs = h6_df["mean_confidence"].values
+    ys = h6_df["hit_rate"].values
+    ns = h6_df["n"].values
+    ax.plot([0, 1], [0, 1], "--", color="#888", label="perfect calibration")
+    ax.plot(xs, ys, "o-", color="#1f77b4", markersize=10, linewidth=2, label="observed")
+    for x, y, n in zip(xs, ys, ns):
+        ax.annotate(f"n={int(n)}", (x, y), textcoords="offset points", xytext=(8, 6), fontsize=9)
+    brier = h6_df["brier_overall"].iloc[0]
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_xlabel("predicted probability (mean confidence)")
+    ax.set_ylabel("observed hit rate")
+    ax.set_title(f"H6 — confidence calibration (NDX +15m)  ·  Brier={brier:.4f}")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3)
+    return fig
+
+
+def plot_h7_category(h7_df):
+    if h7_df.empty:
+        return None
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    for ax, asset in zip(axes, ASSETS):
+        sub = h7_df[h7_df["asset"] == asset].sort_values("mean_abs_pct", ascending=True)
+        if sub.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        bars = ax.barh(sub["category"], sub["mean_abs_pct"], color="#2ca02c", alpha=0.8)
+        for i, (_, r) in enumerate(sub.iterrows()):
+            ax.text(r["mean_abs_pct"], i, f"  n={int(r['n'])}", va="center", fontsize=9)
+        p_anova = sub["p_anova"].iloc[0]
+        ax.set_title(f"{asset.upper()} +15m — mean |Δ%| by category  (ANOVA p={p_anova:.4g})")
+        ax.set_xlabel("mean |Δ%|")
+        ax.grid(True, axis="x", alpha=0.3)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h8_drift(h8_df):
+    if h8_df.empty:
+        return None
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    x = np.arange(len(h8_df))
+    width = 0.28
+    ax.bar(x - width, h8_df["mean_pre_abs"], width, label="pre [-15m, 0]", color="#9467bd")
+    ax.bar(x, h8_df["mean_post_abs"], width, label="post [0, +15m]", color="#d62728")
+    ax.bar(x + width, h8_df["mean_baseline_abs"], width, label="random baseline", color="#7f7f7f")
+    ax.set_xticks(x)
+    ax.set_xticklabels(h8_df["asset"].str.upper())
+    ax.set_ylabel("mean |Δ%|")
+    ax.set_title("H8 — pre-event drift vs post vs baseline (15m windows)")
+    ax.legend()
+    ax.grid(True, axis="y", alpha=0.3)
+    for i, (_, r) in enumerate(h8_df.iterrows()):
+        ax.text(i, max(r["mean_pre_abs"], r["mean_post_abs"]) * 1.05,
+                f"pre>base p={r['p_pre_vs_baseline_mwu']:.3f}", ha="center", fontsize=8)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h9_decay(h9_df, returns_df):
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    if h9_df.empty:
+        ax.set_title("no decay data")
+        return fig
+    # Actual curves: median |Δ%| at each window
+    for asset, color in zip(ASSETS, ["#1f77b4", "#d62728"]):
+        sub = returns_df[(returns_df["asset"] == asset) & returns_df["delta_pct"].notna()]
+        medians = []
+        for w in WINDOWS_MIN:
+            v = sub[sub["window_min"] == w]["delta_pct"].abs()
+            medians.append(float(v.median()) if not v.empty else np.nan)
+        ax.plot(WINDOWS_MIN, medians, "o-", color=color, label=asset.upper(), linewidth=2, markersize=8)
+    ax.set_xscale("log")
+    ax.set_xlabel("window (minutes, log scale)")
+    ax.set_ylabel("median |Δ%|")
+    ax.set_title("H9 — magnitude decay/persistence across windows")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return fig
+
+
+def plot_h10_volume(h10_df):
+    if h10_df.empty:
+        return None
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    for ax, asset in zip(axes, ASSETS):
+        sub = h10_df[h10_df["asset"] == asset].sort_values("window_min")
+        if sub.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        x = np.arange(len(sub))
+        ax.bar(x, sub["median_volume_ratio"], color="#ff9800", alpha=0.85)
+        ax.axhline(1.0, color="black", linestyle="--", linewidth=1, label="baseline (=1)")
+        ax.set_xticks(x)
+        ax.set_xticklabels([f"+{w}m" for w in sub["window_min"]])
+        ax.set_ylabel("median volume_ratio")
+        ax.set_title(f"{asset.upper()} — H10 volume reaction")
+        ax.legend(fontsize=9)
+        ax.grid(True, axis="y", alpha=0.3)
+        for i, (_, r) in enumerate(sub.iterrows()):
+            ax.text(x[i], r["median_volume_ratio"] * 1.02,
+                    f"p={r['p_wilcoxon_gt1']:.3f}", ha="center", fontsize=8)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h11_tod(returns_df):
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+    for ax, asset in zip(axes, ASSETS):
+        sub = returns_df[
+            (returns_df["asset"] == asset)
+            & (returns_df["window_min"] == 15)
+            & returns_df["delta_pct"].notna()
+        ]
+        if sub.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        h_means = sub.groupby("hour_utc")["delta_pct"].apply(lambda s: s.abs().mean())
+        ax.bar(h_means.index, h_means.values, color="#17becf", alpha=0.85)
+        ax.set_xticks(range(0, 24, 2))
+        ax.set_xlabel("hour of day (UTC)")
+        ax.set_ylabel("mean |Δ%|")
+        ax.set_title(f"{asset.upper()} — H11 hour-of-day effect (+15m)")
+        ax.grid(True, axis="y", alpha=0.3)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h12_asymmetric(h12_df):
+    if h12_df.empty:
+        return None
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    for ax, asset in zip(axes, ASSETS):
+        sub = h12_df[h12_df["asset"] == asset].sort_values("window_min")
+        if sub.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        x = np.arange(len(sub))
+        width = 0.35
+        ax.bar(x - width / 2, sub["mean_abs_bear"], width, color="#d62728", label="bear")
+        ax.bar(x + width / 2, sub["mean_abs_bull"], width, color="#2ca02c", label="bull")
+        ax.set_xticks(x)
+        ax.set_xticklabels([f"+{w}m" for w in sub["window_min"]])
+        ax.set_ylabel("mean |Δ%|")
+        ax.set_title(f"{asset.upper()} — H12 asymmetric (bear vs bull)")
+        ax.legend()
+        ax.grid(True, axis="y", alpha=0.3)
+        for i, (_, r) in enumerate(sub.iterrows()):
+            ax.text(x[i], max(r["mean_abs_bear"], r["mean_abs_bull"]) * 1.05,
+                    f"p={r['p_mwu_bear_gt_bull']:.3f}", ha="center", fontsize=8)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h13_surprise(h13_df):
+    if h13_df.empty:
+        return None
+    sub_15 = h13_df[h13_df["window_min"] == 15]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    for ax, asset in zip(axes, ASSETS):
+        row = sub_15[sub_15["asset"] == asset]
+        if row.empty:
+            ax.set_title(f"{asset.upper()} — no data")
+            continue
+        r = row.iloc[0]
+        means = [r["mean_expected"], r["mean_surprise"], r["mean_shock"]]
+        ns = [int(r["n_expected"]), int(r["n_surprise"]), int(r["n_shock"])]
+        bars = ax.bar(["expected", "surprise", "shock"], means,
+                      color=["#7fb3d5", "#f4a261", "#a4133c"])
+        for i, b in enumerate(bars):
+            ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
+                    f"n={ns[i]}", ha="center", va="bottom", fontsize=9)
+        ax.set_title(f"{asset.upper()} +15m — H13 surprise_level\n(ANOVA p={r['p_anova']:.4g})")
+        ax.set_ylabel("mean |Δ%|")
+        ax.grid(True, axis="y", alpha=0.3)
+    plt.tight_layout()
+    return fig
+
+
+def plot_h14_spillover(returns_df):
+    pivot = returns_df[
+        (returns_df["window_min"] == 15)
+        & returns_df["delta_pct"].notna()
+    ].pivot_table(index="event_id", columns="asset", values="delta_pct", aggfunc="first").dropna()
+    fig, ax = plt.subplots(figsize=(7, 6))
+    if pivot.empty:
+        ax.set_title("no spillover data")
+        return fig
+    eur, ndx = pivot["eurusd"].values, pivot["ndx"].values
+    ax.scatter(eur, ndx, alpha=0.4, s=20, color="#1f77b4")
+    # Quadrant lines
+    ax.axhline(0, color="black", linewidth=0.6)
+    ax.axvline(0, color="black", linewidth=0.6)
+    # Linear fit
+    if len(eur) >= 2:
+        slope, intercept = np.polyfit(eur, ndx, 1)
+        xs = np.linspace(eur.min(), eur.max(), 50)
+        ax.plot(xs, slope * xs + intercept, "r--", linewidth=2,
+                label=f"OLS: slope={slope:+.2f}")
+    from scipy.stats import pearsonr
+    r_p, p_p = pearsonr(eur, ndx)
+    ax.set_xlabel("EUR/USD Δ% [+15m]")
+    ax.set_ylabel("NQ-100 Δ% [+15m]")
+    ax.set_title(f"H14 — cross-asset spillover\nPearson r={r_p:+.3f} (p={p_p:.4g}), n={len(pivot)}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return fig
+
+
 def plot_h3_scatter(returns_df):
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for ax, asset in zip(axes, ASSETS):
@@ -179,7 +417,21 @@ def render_table(df, max_rows=20, fmt=None):
     return df.to_html(index=False, classes="report-table", border=0)
 
 
-def build_html(events, returns_df, h1_df, h2_df, h3_df, h4_df, prices_eur, prices_ndx, output_path):
+def build_html(events, returns_df, hyp_dfs, prices_eur, prices_ndx, output_path):
+    h1_df = hyp_dfs.get("h1", pd.DataFrame())
+    h2_df = hyp_dfs.get("h2", pd.DataFrame())
+    h3_df = hyp_dfs.get("h3", pd.DataFrame())
+    h4_df = hyp_dfs.get("h4", pd.DataFrame())
+    h5_df = hyp_dfs.get("h5", pd.DataFrame())
+    h6_df = hyp_dfs.get("h6", pd.DataFrame())
+    h7_df = hyp_dfs.get("h7", pd.DataFrame())
+    h8_df = hyp_dfs.get("h8", pd.DataFrame())
+    h9_df = hyp_dfs.get("h9", pd.DataFrame())
+    h10_df = hyp_dfs.get("h10", pd.DataFrame())
+    h11_df = hyp_dfs.get("h11", pd.DataFrame())
+    h12_df = hyp_dfs.get("h12", pd.DataFrame())
+    h13_df = hyp_dfs.get("h13", pd.DataFrame())
+    h14_df = hyp_dfs.get("h14", pd.DataFrame())
     n_events = len(events)
     intraday_n = (~returns_df["is_in_closed_period"]).any() and (~returns_df["is_in_closed_period"]).sum()
 
@@ -226,8 +478,18 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
                          f"<strong>{row['hit_rate']*100:.0f}%</strong> ({int(row['correct'])}/{int(row['n'])}), "
                          f"p_binom = <strong>{row['p_binom']:.4f}</strong></div>")
 
-    parts.append("<div class='warn'><strong>⚠️ Notă pilot:</strong> rezultatele sunt pe 1 zi de date (n mic). "
-                 "Pe export-ul complet (~1000 events × 13 luni) puterea statistică va fi mult mai mare.</div>")
+    if not events.empty:
+        date_min = events["timestamp_utc"].min()
+        date_max = events["timestamp_utc"].max()
+        days_span = (date_max - date_min).days
+        if days_span < 7:
+            parts.append("<div class='warn'><strong>⚠️ Notă pilot:</strong> rezultatele sunt pe "
+                         f"{days_span+1} zi/zile de date (n mic). Pe export-ul complet puterea statistică va fi mult mai mare.</div>")
+        else:
+            parts.append(f"<div class='signal'><strong>📅 Full dataset:</strong> "
+                         f"{n_events} events analizate pe {days_span} zile "
+                         f"({date_min.strftime('%Y-%m-%d')} → {date_max.strftime('%Y-%m-%d')}). "
+                         f"Putere statistică completă.</div>")
 
     parts.append("<h2>📋 Events analizate</h2>")
     show_cols = ["timestamp_utc", "category", "sentiment_usd", "sentiment_ndx",
@@ -281,7 +543,121 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     else:
         parts.append(render_table(h4_df, fmt={
             "duration_min": "{:.0f}", "agg_sentiment": "{:+.3f}", "gap_pct": "{:+.4f}",
-        }))
+        }, max_rows=200))
+
+    # ----- H5 magnitude -----
+    parts.append("<h2>📐 H5 — `expected_magnitude` prezice |Δ%|</h2>")
+    parts.append("<p>Modelul DeepSeek prezice categoria de magnitudine (low/med/high). Verificăm dacă coincide empiric cu |Δ%| realizat.</p>")
+    fig = plot_h5_magnitude(h5_df, returns_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H5"))
+    parts.append(render_table(h5_df, max_rows=20, fmt={
+        "mean_low": "{:.4f}", "mean_med": "{:.4f}", "mean_high": "{:.4f}",
+        "f_stat": "{:.2f}", "p_anova": "{:.4g}",
+    }))
+
+    # ----- H6 calibration -----
+    parts.append("<h2>🎯 H6 — calibrare confidence (NDX +15m)</h2>")
+    parts.append("<p>Buckets de confidence vs hit rate observat. Diagrama de fiabilitate trebuie să fie aproape de diagonală.</p>")
+    fig = plot_h6_calibration(h6_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H6 calibration"))
+    parts.append(render_table(h6_df, fmt={
+        "mean_confidence": "{:.3f}", "hit_rate": "{:.1%}", "brier_overall": "{:.4f}",
+    }))
+
+    # ----- H7 category -----
+    parts.append("<h2>🗂️ H7 — efect per categorie</h2>")
+    parts.append("<p>Care categorii de știri produc cele mai mari mișcări? ANOVA pe |Δ%| la fereastra +15m.</p>")
+    fig = plot_h7_category(h7_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H7 category"))
+    parts.append(render_table(h7_df, max_rows=30, fmt={
+        "mean_abs_pct": "{:.4f}", "median_abs_pct": "{:.4f}",
+        "f_anova": "{:.2f}", "p_anova": "{:.4g}",
+    }))
+
+    # ----- H8 pre-event drift -----
+    parts.append("<h2>⏪ H8 — pre-event drift (market efficiency)</h2>")
+    parts.append("<p>Compară |Δ%| în [-15m, 0] înainte de event vs post-event +15m vs random baseline. Pre &gt; baseline = leakage / front-running posibil.</p>")
+    fig = plot_h8_drift(h8_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H8 drift"))
+    parts.append(render_table(h8_df, fmt={
+        "mean_pre_abs": "{:.4f}", "mean_post_abs": "{:.4f}",
+        "mean_baseline_abs": "{:.4f}",
+        "p_pre_vs_post_paired": "{:.4g}",
+        "p_pre_vs_baseline_t": "{:.4g}",
+        "p_pre_vs_baseline_mwu": "{:.4g}",
+    }))
+
+    # ----- H9 decay -----
+    parts.append("<h2>📉 H9 — persistență vs decay</h2>")
+    parts.append("<p>Mișcarea la +15m persistă spre +4h sau revertește? Sign agreement între ferestre.</p>")
+    fig = plot_h9_decay(h9_df, returns_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H9 decay"))
+    parts.append(render_table(h9_df, fmt={
+        "sign_match_rate": "{:.1%}", "p_binom_persistence": "{:.4g}",
+        "median_ratio_4h_to_15m": "{:.2f}",
+    }))
+
+    # ----- H10 volume -----
+    parts.append("<h2>📊 H10 — reacție de volum</h2>")
+    parts.append("<p>Volumul tradat în fereastra eveniment vs volum mediu pe baseline (medie pe 30 zile, aceeași oră). Wilcoxon &gt;1.</p>")
+    fig = plot_h10_volume(h10_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H10 volume"))
+    parts.append(render_table(h10_df, fmt={
+        "mean_volume_ratio": "{:.2f}", "median_volume_ratio": "{:.2f}",
+        "p_wilcoxon_gt1": "{:.4g}",
+    }))
+
+    # ----- H11 time of day -----
+    parts.append("<h2>🕐 H11 — efect time-of-day</h2>")
+    parts.append("<p>Distribuția |Δ%| pe ora UTC (+15m). ANOVA pe ore + zile săptămânii.</p>")
+    fig = plot_h11_tod(returns_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H11 time-of-day"))
+    parts.append(render_table(h11_df, fmt={
+        "f_hour": "{:.2f}", "p_hour": "{:.4g}",
+        "f_dow": "{:.2f}", "p_dow": "{:.4g}",
+    }))
+
+    # ----- H12 asymmetric -----
+    parts.append("<h2>⚖️ H12 — asimetrie bear vs bull</h2>")
+    parts.append("<p>Loss aversion / fear premium: news bear produc mișcări mai mari decât news bull?</p>")
+    fig = plot_h12_asymmetric(h12_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H12 asymmetric"))
+    parts.append(render_table(h12_df, fmt={
+        "mean_abs_bear": "{:.4f}", "mean_abs_bull": "{:.4f}",
+        "ratio_bear_to_bull": "{:.2f}",
+        "p_ttest": "{:.4g}", "p_mwu_bear_gt_bull": "{:.4g}",
+    }))
+
+    # ----- H13 surprise -----
+    parts.append("<h2>💥 H13 — surprise_level → magnitudine</h2>")
+    parts.append("<p>Câmp nou de sentiment: `expected / surprise / shock`. Verificăm corelația cu |Δ%|.</p>")
+    fig = plot_h13_surprise(h13_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H13 surprise"))
+    parts.append(render_table(h13_df, max_rows=20, fmt={
+        "mean_expected": "{:.4f}", "mean_surprise": "{:.4f}", "mean_shock": "{:.4f}",
+        "f_anova": "{:.2f}", "p_anova": "{:.4g}",
+    }))
+
+    # ----- H14 spillover -----
+    parts.append("<h2>🔀 H14 — cross-asset spillover</h2>")
+    parts.append("<p>Per-event corelație între Δ% NDX și Δ% EUR/USD la +15m. Scatter cu fit OLS.</p>")
+    fig = plot_h14_spillover(returns_df)
+    if fig is not None:
+        parts.append(img_tag(fig_to_base64(fig), "H14 spillover"))
+    parts.append(render_table(h14_df, fmt={
+        "pearson_r": "{:+.3f}", "p_pearson": "{:.4g}",
+        "spearman_r": "{:+.3f}", "p_spearman": "{:.4g}",
+        "sign_match_rate": "{:.1%}", "p_binom_sign": "{:.4g}",
+    }))
 
     parts.append("<h2>🔍 Top-10 case studies (cele mai mari mișcări)</h2>")
     parts.append("<p>Cele mai mari mișcări absolute pe NDX la fereastra +15m. Linia neagră întreruptă = momentul evenimentului. Liniile gri punctate = ferestrele [+1m, +5m, +15m, +1h, +4h].</p>")
@@ -354,13 +730,10 @@ def main():
             return pd.read_csv(path)
         return pd.DataFrame()
 
-    h1 = safe_read(f"{args.results_dir}/h1_results.csv")
-    h2 = safe_read(f"{args.results_dir}/h2_results.csv")
-    h3 = safe_read(f"{args.results_dir}/h3_results.csv")
-    h4 = safe_read(f"{args.results_dir}/h4_results.csv")
+    hyp_dfs = {f"h{i}": safe_read(f"{args.results_dir}/h{i}_results.csv") for i in range(1, 15)}
 
     print(f"Building report from {len(events)} events ...")
-    build_html(events, returns_df, h1, h2, h3, h4, prices_eur, prices_ndx, args.output)
+    build_html(events, returns_df, hyp_dfs, prices_eur, prices_ndx, args.output)
     print(f"Wrote {args.output}")
     if not args.no_open:
         webbrowser.open(f"file:///{Path(args.output).resolve()}")

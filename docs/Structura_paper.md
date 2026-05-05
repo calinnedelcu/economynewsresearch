@@ -103,7 +103,13 @@ Scris la final, după ce rezultatele sunt gata. Unpersonal ("the study examines.
 Filtrul aplicat: mesaje FJ marcate cu 🔴 (market-moving alert), excluzând tag-ul `$MACRO` (date programate). Rezultat: N = ~1000 evenimente neașteptate (gold). Categorizare automată: `geopolitical / politics / central_bank / energy / corporate / other`, prin regex pe keyword-uri.
 
 ### 3.3 Sentiment classification
-Fiecare eveniment procesat prin **DeepSeek V4 Flash** API, zero-shot cu 8 exemple few-shot. Output JSON: `sentiment_usd ∈ {bull, bear, neutral}`, `sentiment_ndx ∈ {bull, bear, neutral}`, `magnitude ∈ {low, med, high}`, `confidence ∈ [0,1]`, `rationale`.
+Fiecare eveniment procesat prin **DeepSeek V4 Flash** API, zero-shot cu 8 exemple few-shot. Output JSON augmentat:
+- `sentiment_usd`, `sentiment_ndx` ∈ {bull, bear, neutral} — direcție discretă
+- `directional_strength_usd`, `directional_strength_ndx` ∈ [-1, +1] — intensitate continuă
+- `expected_magnitude` ∈ {low, med, high} — magnitudine predicted
+- `surprise_level` ∈ {expected, surprise, shock} — cât de neașteptată e știrea
+- `confidence` ∈ [0, 1] — încredere model
+- `rationale` (text scurt)
 
 **Justificare model:** Muhammad et al. (2025) demonstrează că DeepSeek family ranks among top performers pentru TBFSA. Wu et al. (2025) arată că reasoning models nu îmbunătățesc sentiment classification → folosim Flash variant. Open weights asigură reproducibility.
 
@@ -117,11 +123,29 @@ Pentru fiecare eveniment t:
 
 Detectare automată a perioadelor de piață închisă: gap-uri > 5 min între bare consecutive în feed-ul Dukascopy (gestionează DST, weekend, holidays).
 
-### 3.5 Hypothesis tests
-- **H1:** one-sample t-test pe |abnormal_return| vs 0, și Mann-Whitney U ca robust alternative.
-- **H2:** 3×3 matrice confuzie (sentiment prezis × direcție observată), test binomial one-sided pentru respingerea hazardului 50%.
-- **H3:** OLS regression cu termen de interacțiune. Reportăm coef. β₃, SE, p-value, R².
-- **H4 (extensie):** OLS regression `gap_pct ~ aggregate_sentiment + prior_trend` pe perioadele de piață închisă.
+### 3.5 Hypothesis tests (14 ipoteze)
+
+**Ipoteze principale (event study core):**
+- **H1:** Mann-Whitney U + t-test pe |Δ%| events vs random baseline windows (one-sided greater).
+- **H2:** 3×3 matrice confuzie (sentiment × direcție observată), binomial test one-sided pentru rejection of chance (50%).
+- **H3:** OLS `|Δ%| ~ sentiment + trend_zi + sentiment×trend_zi`. Test β₃ (interacțiune).
+- **H4:** OLS `gap_pct ~ aggregate_sentiment` pe closed periods (auto-detectate prin gap-uri >5min în feed-ul de prețuri).
+
+**Ipoteze suplimentare (model & market structure):**
+- **H5:** ANOVA `|Δ%| ~ expected_magnitude` (validează model-ul de magnitude).
+- **H6:** Reliability diagram + Brier score pentru calibrarea `confidence`.
+- **H7:** ANOVA `|Δ%| ~ category`; identifică categorii dominante.
+- **H8:** Pre-event drift `|Δ%[-15m,0]|` events vs random baseline (information leakage test).
+- **H9:** Sign agreement |Δ%[+15m]| vs |Δ%[+4h]| (persistență vs decay).
+- **H10:** Wilcoxon signed-rank pe `volume_ratio` events vs 1 (one-sided greater).
+- **H11:** ANOVA pe `hour_utc` + `day_of_week` (time-of-day effects).
+- **H12:** `|Δ%|_bear` vs `|Δ%|_bull` (asimetrie / loss aversion).
+- **H13:** ANOVA `|Δ%| ~ surprise_level` (folosește câmp nou de sentiment).
+- **H14:** Pearson + Spearman correlation NDX × EUR/USD (cross-asset spillover).
+
+**Methodology control (Lopez-Lira, Tang & Zhu, 2025):** raportăm F1-score split pe pre/post knowledge cutoff (ian 2026) pentru a controla memorization risk.
+
+**Robustness:** A/B comparison Flash vs Pro pe 200 mostre; raportăm agreement rate + Pearson r pe directional_strength + Brier score per model. Justificare empirică pentru alegerea Flash (per Wu et al., 2025).
 
 **Figura 1:** diagramă bloc a pipeline-ului (Discord → parser → sentiment → event study → teste).
 
