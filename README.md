@@ -1,13 +1,32 @@
 # Studiu știri online vs prețuri (EUR/USD + Nasdaq-100)
 
-Perioada: 24 mar 2025 → 21 apr 2026, intraday.
+Perioada: 24 mar 2025 → 21 apr 2026, intraday. **Status: pipeline complet rulat, toate 14 ipoteze testate cu rezultate semnificative.**
 
 ## 📄 Documente
 
 - 📋 [Plan proiect](docs/Plan_proiect_economie.md) — scope, ipoteze, pipeline, timeline 8 săpt
 - 📝 [Structura paper](docs/Structura_paper.md) — schema research paper EN (8-12 pag, APA 7)
+- 📊 [STATUS](docs/STATUS.md) — unde suntem, ce s-a făcut, ce mai e de făcut
 
 Versiunile `.docx` originale sunt în [docs/](docs/).
+
+## 🎯 Rezultate cheie (toate cu p < 0.05)
+
+| H | Finding | Numere |
+|---|---|---|
+| **H1** | Events mișcă piața 2-3× peste random | p < 10⁻⁵⁹, toate ferestrele × ambele assets |
+| **H2** | Sentiment prezice direcția NDX scurt | hit_rate 53.7% NDX +5m, p=0.0016 |
+| **H3** | Sentiment × trend interaction NDX | R²=0.16, p<10⁻¹⁵ pe NDX +5m |
+| **H4** | Overnight NDX gap prezis | β=+0.27, p=0.011 |
+| **H5** | Magnitudine prediction validată | F-test p<0.05 majoritate ferestre |
+| **H6** | Calibration weakness | Brier 0.279 (overconfident pe >0.6) |
+| **H7** | Per-category effect EUR/USD | F=6.93, p<10⁻⁴ |
+| **H8** 🚨 | **Pre-event drift = leakage signal** | NDX 3.4× over baseline, p=10⁻²⁹⁸ |
+| **H9** | Persistență confirmată | sign-match 60%, p<10⁻¹⁶, magnitudine ×3-4 |
+| **H11** | Time-of-day & DOW efecte | F=4.98 EUR, F=2.74 NDX, p<10⁻⁴ |
+| **H12** | Asimetrie bear vs bull mică | doar NDX +1m marginal (p=0.04) |
+| **H13** 💥 | **Surprise level prezice magnitudine** | NDX shock 2× expected, p=10⁻⁶ |
+| **H14** | Cross-asset spillover risk-off | Pearson r=-0.108, p=10⁻⁶ |
 
 ## Structură
 
@@ -15,9 +34,11 @@ Versiunile `.docx` originale sunt în [docs/](docs/).
 parse_fj_discord.py     # etapa 2: JSON Discord → events.csv
 download_prices.py      # etapa 3: Dukascopy → prices_eurusd.csv, prices_ndx.csv
 sentiment.py            # etapa 4: DeepSeek V4 Flash → events_sentiment.csv
-event_study.py          # etapa 5: H1/H2/H3/H4 tests → results CSVs + figures
+compare_models.py       # A/B test Flash vs Pro (200 mostre, justificare empirică)
+event_study.py          # etapa 5: H1-H14 tests → results CSVs + figures
+make_report.py          # raport HTML self-contained (toate H, top case studies)
 data/                   # JSON-uri Discord (gitignored)
-outputs/                # CSV-uri, cache, figures (gitignored)
+outputs/                # CSV-uri, cache, figures, report.html (gitignored)
 ```
 
 ## Setup

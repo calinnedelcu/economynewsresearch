@@ -3,6 +3,8 @@
 **EUR/USD + Nasdaq-100 · 24 mar 2025 – 21 apr 2026 · intraday (min–ore)**
 
 > Sursă originală: [Plan_proiect_economie.docx](Plan_proiect_economie.docx)
+>
+> **Status live:** vezi [STATUS.md](STATUS.md). Pipeline tehnic complet rulat; toate 14 ipoteze testate; paper drafting rămâne pentru echipă.
 
 ## Scope
 
