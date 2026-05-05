@@ -7,8 +7,10 @@ Plan complet în `Plan_proiect_economie.docx`. Perioada: 24 mar 2025 → 21 apr 
 ```
 parse_fj_discord.py     # etapa 2: JSON Discord → events.csv
 download_prices.py      # etapa 3: Dukascopy → prices_eurusd.csv, prices_ndx.csv
+sentiment.py            # etapa 4: DeepSeek V4 Flash → events_sentiment.csv
+event_study.py          # etapa 5: H1/H2/H3/H4 tests → results CSVs + figures
 data/                   # JSON-uri Discord (gitignored)
-outputs/                # CSV-uri (gitignored)
+outputs/                # CSV-uri, cache, figures (gitignored)
 ```
 
 ## Setup
@@ -80,3 +82,22 @@ Cache local SQLite (`outputs/sentiment_cache.sqlite`) — re-rularea pe aceleaș
 - Wu et al. (2025) — reasoning models nu îmbunătățesc sentiment financiar → folosim Flash, nu Pro
 - Open weights → reproducibility academic
 - Cost ~$0.20 pentru 1000 events vs $20+ pentru frontier closed-source
+
+### Etapa 5 — event study + teste statistice
+```bash
+.venv/Scripts/python.exe event_study.py
+```
+
+Rulează 4 ipoteze pe ferestrele [0,+1m], [0,+5m], [0,+15m], [0,+1h], [0,+4h]:
+
+- **H1**: |Δ%| events vs distribuție null random (t-test + Mann-Whitney U)
+- **H2**: sentiment-direction agreement (matrice confuzie + binomial test)
+- **H3**: regresie OLS `|Δ%| ~ sentiment + trend + sentiment×trend`
+- **H4**: gap regression pe closed-periods (weekend FX, overnight NDX) cu sentiment agregat
+
+Output:
+- `outputs/event_study_windows.csv` — un rând per event × asset × fereastră
+- `outputs/h1_results.csv`, `h2_results.csv`, `h3_results.csv`, `h4_results.csv`
+- `outputs/figures/*.png`
+
+Detecție automată closed periods (gap-uri > 5 min între bare consecutive în prețuri) — funcționează indiferent de DST, holidays, schedule changes.
