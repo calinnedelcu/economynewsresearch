@@ -283,10 +283,21 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
             "duration_min": "{:.0f}", "agg_sentiment": "{:+.3f}", "gap_pct": "{:+.4f}",
         }))
 
-    parts.append("<h2>🔍 Per-event timelines</h2>")
-    parts.append("<p>Pentru fiecare event gold, prețul EUR/USD și NQ-100 cu 30 min înainte și 4 ore după. Linia neagră întreruptă = momentul evenimentului. Liniile gri punctate = ferestrele [+1m, +5m, +15m, +1h, +4h].</p>")
+    parts.append("<h2>🔍 Top-10 case studies (cele mai mari mișcări)</h2>")
+    parts.append("<p>Cele mai mari mișcări absolute pe NDX la fereastra +15m. Linia neagră întreruptă = momentul evenimentului. Liniile gri punctate = ferestrele [+1m, +5m, +15m, +1h, +4h].</p>")
 
-    for _, ev in events.iterrows():
+    # Pick top events by abs delta_pct on NDX +15m
+    top_15m = returns_df[
+        (returns_df["asset"] == "ndx")
+        & (returns_df["window_min"] == 15)
+        & returns_df["delta_pct"].notna()
+    ].copy()
+    top_15m["abs_pct"] = top_15m["delta_pct"].abs()
+    top_15m = top_15m.sort_values("abs_pct", ascending=False).head(10)
+    top_event_ids = set(top_15m["event_id"].astype(str))
+    top_events = events[events["id"].astype(str).isin(top_event_ids)].copy()
+
+    for _, ev in top_events.iterrows():
         parts.append("<div class='event-card'>")
         fig = plot_event_timeline(ev, prices_eur, prices_ndx)
         parts.append(img_tag(fig_to_base64(fig), f"event {ev['id']}"))

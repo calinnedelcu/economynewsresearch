@@ -20,7 +20,9 @@ import json
 import os
 import sqlite3
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -143,7 +145,8 @@ def cache_key(model: str, system: str, content: str) -> str:
 
 def open_cache(path: str) -> sqlite3.Connection:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sentiment_cache (
             key TEXT PRIMARY KEY,
@@ -157,17 +160,22 @@ def open_cache(path: str) -> sqlite3.Connection:
     return conn
 
 
+_cache_lock = threading.Lock()
+
+
 def cache_get(conn, key):
-    row = conn.execute("SELECT response_json FROM sentiment_cache WHERE key=?", (key,)).fetchone()
+    with _cache_lock:
+        row = conn.execute("SELECT response_json FROM sentiment_cache WHERE key=?", (key,)).fetchone()
     return json.loads(row[0]) if row else None
 
 
 def cache_put(conn, key, response, prompt_tokens, completion_tokens):
-    conn.execute(
-        "INSERT OR REPLACE INTO sentiment_cache (key, response_json, prompt_tokens, completion_tokens) VALUES (?,?,?,?)",
-        (key, json.dumps(response), prompt_tokens, completion_tokens),
-    )
-    conn.commit()
+    with _cache_lock:
+        conn.execute(
+            "INSERT OR REPLACE INTO sentiment_cache (key, response_json, prompt_tokens, completion_tokens) VALUES (?,?,?,?)",
+            (key, json.dumps(response), prompt_tokens, completion_tokens),
+        )
+        conn.commit()
 
 
 def call_api(client: OpenAI, messages: list, max_retries: int = 3) -> tuple:
@@ -224,6 +232,7 @@ def main():
     p.add_argument("--limit", type=int, default=None, help="Process only first N gold events (for testing)")
     p.add_argument("--all", action="store_true", help="Process ALL events, not only is_gold")
     p.add_argument("--cache", default=CACHE_PATH, help="SQLite cache path")
+    p.add_argument("--workers", type=int, default=1, help="Concurrent API workers (1=serial)")
     args = p.parse_args()
 
     load_dotenv()
@@ -249,34 +258,36 @@ def main():
     print(f"Cache: {args.cache}")
     print()
 
-    out_rows = []
-    total_in_tokens = 0
-    total_out_tokens = 0
-    cache_hits = 0
-    api_calls = 0
+    counters = {"cache_hits": 0, "api_calls": 0, "in_tok": 0, "out_tok": 0, "done": 0, "skipped": 0}
+    counters_lock = threading.Lock()
+    results = [None] * len(rows)
+    progress_every = max(1, len(rows) // 40)
 
-    for i, row in enumerate(rows, 1):
+    def process(idx, row):
         content = row["content"]
         key = cache_key(MODEL, SYSTEM_PROMPT, content)
         cached = cache_get(conn, key)
         if cached:
             sentiment = cached
-            cache_hits += 1
-            status = "[cache]"
+            with counters_lock:
+                counters["cache_hits"] += 1
         else:
             messages = build_messages(content)
-            sentiment, ptok, ctok = call_api(client, messages)
+            try:
+                sentiment, ptok, ctok = call_api(client, messages)
+            except Exception as e:
+                with counters_lock:
+                    counters["skipped"] += 1
+                return None
             if not validate_response(sentiment):
-                print(f"  [{i}] WARN invalid response, skipping: {sentiment}")
-                continue
+                with counters_lock:
+                    counters["skipped"] += 1
+                return None
             cache_put(conn, key, sentiment, ptok, ctok)
-            total_in_tokens += ptok
-            total_out_tokens += ctok
-            api_calls += 1
-            status = f"[api {ptok}+{ctok}]"
-
-        preview = content.splitlines()[0][:80]
-        print(f"  [{i}/{len(rows)}] {status} {sentiment['sentiment_usd']:>7s}/{sentiment['sentiment_ndx']:>7s} conf={sentiment['confidence']:.2f} | {preview}")
+            with counters_lock:
+                counters["api_calls"] += 1
+                counters["in_tok"] += ptok
+                counters["out_tok"] += ctok
 
         out_row = dict(row)
         out_row["sentiment_usd"] = sentiment["sentiment_usd"]
@@ -285,7 +296,37 @@ def main():
         out_row["confidence"] = sentiment["confidence"]
         out_row["rationale"] = sentiment["rationale"]
         out_row["sentiment_model"] = MODEL
-        out_rows.append(out_row)
+
+        with counters_lock:
+            counters["done"] += 1
+            done = counters["done"]
+            if done % progress_every == 0 or done == len(rows):
+                cost = counters["in_tok"] * 0.14e-6 + counters["out_tok"] * 0.28e-6
+                preview = content.splitlines()[0][:60]
+                print(f"  [{done:4d}/{len(rows)}] cache={counters['cache_hits']} api={counters['api_calls']} cost=${cost:.4f}  {sentiment['sentiment_usd'][:4]}/{sentiment['sentiment_ndx'][:4]} | {preview}", flush=True)
+        return idx, out_row
+
+    if args.workers > 1:
+        print(f"Running with {args.workers} concurrent workers ...\n")
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            futures = [ex.submit(process, i, row) for i, row in enumerate(rows)]
+            for fut in as_completed(futures):
+                res = fut.result()
+                if res is not None:
+                    idx, out_row = res
+                    results[idx] = out_row
+    else:
+        for i, row in enumerate(rows):
+            res = process(i, row)
+            if res is not None:
+                idx, out_row = res
+                results[idx] = out_row
+
+    out_rows = [r for r in results if r is not None]
+    cache_hits = counters["cache_hits"]
+    api_calls = counters["api_calls"]
+    total_in_tokens = counters["in_tok"]
+    total_out_tokens = counters["out_tok"]
 
     if not out_rows:
         print("No rows produced.", file=sys.stderr)

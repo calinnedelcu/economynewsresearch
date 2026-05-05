@@ -120,29 +120,41 @@ def compute_returns_for_events(events, prices, closed_periods_by_asset):
 
 
 def generate_baseline_windows(prices, event_timestamps, n_windows, window_min, rng, exclude_buffer_min=60):
-    """Sample random window starts from prices index, avoiding ±buffer around any event."""
-    valid_idx = []
-    excluded = set()
-    for ts in event_timestamps:
-        for delta in range(-exclude_buffer_min, exclude_buffer_min + 1):
-            excluded.add(ts.floor("min") + pd.Timedelta(minutes=delta))
-    target_offset = pd.Timedelta(minutes=window_min)
-    for ts in prices.index:
-        if ts in excluded:
-            continue
-        if (ts + target_offset) in prices.index:
-            valid_idx.append(ts)
-    if len(valid_idx) < n_windows:
+    """Sample random window starts from prices index, avoiding ±buffer around any event.
+
+    Vectorized: build excluded mask via timestamp arithmetic, then use pandas
+    shift to find valid (start, target) pairs. O(N+E) instead of O(N*E).
+    """
+    if len(prices) == 0 or n_windows <= 0:
         return []
-    sampled = rng.choice(len(valid_idx), size=n_windows, replace=False)
-    out = []
-    for i in sampled:
-        ts = valid_idx[i]
-        target = ts + target_offset
-        base = prices.loc[ts, "close"]
-        tgt = prices.loc[target, "close"]
-        out.append((ts, (tgt - base) / base * 100))
-    return out
+
+    # Build excluded set once with vectorized broadcasting.
+    if len(event_timestamps):
+        ev_arr = np.array([pd.Timestamp(t).floor("min") for t in event_timestamps], dtype="datetime64[ns]")
+        deltas = np.arange(-exclude_buffer_min, exclude_buffer_min + 1) * np.timedelta64(1, "m")
+        excluded_arr = (ev_arr[:, None] + deltas[None, :]).ravel()
+        excluded = pd.DatetimeIndex(excluded_arr).tz_localize("UTC")
+    else:
+        excluded = pd.DatetimeIndex([], tz="UTC")
+
+    # Mark each bar: valid if NOT excluded AND target bar exists in index.
+    target_offset = pd.Timedelta(minutes=window_min)
+    target_index = prices.index + target_offset
+    has_target_mask = target_index.isin(prices.index)
+    not_excluded_mask = ~prices.index.isin(excluded)
+    valid_mask = has_target_mask & not_excluded_mask
+
+    valid_starts = prices.index[valid_mask]
+    if len(valid_starts) < n_windows:
+        return []
+
+    sampled_pos = rng.choice(len(valid_starts), size=n_windows, replace=False)
+    starts = valid_starts[sampled_pos]
+    targets = starts + target_offset
+    base_prices = prices.loc[starts, "close"].to_numpy()
+    tgt_prices = prices.loc[targets, "close"].to_numpy()
+    pcts = (tgt_prices - base_prices) / base_prices * 100
+    return list(zip(starts, pcts))
 
 
 def test_h1(returns_df, prices, rng):
