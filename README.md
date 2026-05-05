@@ -6,8 +6,17 @@ Plan complet în `Plan_proiect_economie.docx`. Perioada: 24 mar 2025 → 21 apr 
 
 ```
 parse_fj_discord.py     # etapa 2: JSON Discord → events.csv
+download_prices.py      # etapa 3: Dukascopy → prices_eurusd.csv, prices_ndx.csv
 data/                   # JSON-uri Discord (gitignored)
-outputs/                # events.csv, prices_*.csv, rezultate (gitignored)
+outputs/                # CSV-uri (gitignored)
+```
+
+## Setup
+
+```bash
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements.txt   # Windows
+# source .venv/bin/activate && pip install -r requirements.txt   # Linux/Mac
 ```
 
 ## Cum rulezi
@@ -32,3 +41,16 @@ Coloane în `events.csv`:
 | `is_url_only` | doar URL în mesaj |
 | `category` | macro_release / central_bank / geopolitical / politics / energy / other |
 | `is_gold` | `(has_red_dot OR is_breaking) AND NOT is_macro` — filtru pentru event study |
+
+### Etapa 3 — download prețuri (Dukascopy)
+```bash
+.venv/Scripts/python.exe download_prices.py --start 2026-04-15 --end 2026-04-21
+```
+
+Scrie `outputs/prices_eurusd.csv` și `outputs/prices_ndx.csv` cu OHLCV 1-minut.
+
+Instrumentele Dukascopy folosite:
+- **EUR/USD** spot FX (24/5, weekend break vineri seara)
+- **E_NQ-100** CFD index (închis weekend; corespunde futures NQ)
+
+Note timezone: toate timestamp-urile sunt **UTC** la sursă, fără conversie locală.
