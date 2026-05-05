@@ -4,8 +4,9 @@
 dukascopy-python>=4.0
 pandas>=2.0
 
-# Etapa 4 (sentiment) - de adăugat:
-# anthropic
+# Etapa 4 (sentiment classification):
+openai>=2.0
+python-dotenv>=1.0
 
 # Etapa 5 (analiză) - de adăugat:
 # numpy, scipy, statsmodels, matplotlib

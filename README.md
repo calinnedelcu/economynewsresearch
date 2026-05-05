@@ -54,3 +54,29 @@ Instrumentele Dukascopy folosite:
 - **E_NQ-100** CFD index (închis weekend; corespunde futures NQ)
 
 Note timezone: toate timestamp-urile sunt **UTC** la sursă, fără conversie locală.
+
+### Etapa 4 — sentiment classification (DeepSeek V4 Flash)
+
+Necesită cheie API DeepSeek în `.env`:
+```
+DEEPSEEK_API_KEY=sk-...
+```
+
+Rulare:
+```bash
+.venv/Scripts/python.exe sentiment.py outputs/events.csv -o outputs/events_sentiment.csv
+```
+
+Adaugă la fiecare eveniment:
+- `sentiment_usd`, `sentiment_ndx` ∈ {bull, bear, neutral}
+- `expected_magnitude` ∈ {low, med, high}
+- `confidence` ∈ [0, 1]
+- `rationale` — propoziție scurtă
+
+Cache local SQLite (`outputs/sentiment_cache.sqlite`) — re-rularea pe aceleași evenimente nu re-cheltuiește credit API.
+
+**Justificare model** (pentru paper Methodology):
+- Muhammad et al. (2025) — DeepSeek-R1 ranks among top performers on Target-Based Financial Sentiment Analysis
+- Wu et al. (2025) — reasoning models nu îmbunătățesc sentiment financiar → folosim Flash, nu Pro
+- Open weights → reproducibility academic
+- Cost ~$0.20 pentru 1000 events vs $20+ pentru frontier closed-source

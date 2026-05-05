@@ -11,6 +11,8 @@ outputs/
 FinancialJuice*.json
 *.csv
 prices_*.parquet
+*.sqlite
+*.db
 
 # Secrets / API keys
 .env
