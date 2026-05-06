@@ -75,6 +75,10 @@ Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
 - `outputs/report.html`
 - `docs/report.html`
 
+Interpretarea non-tehnica pentru traderi este in:
+
+- `docs/Interpretare_traderi.md`
+
 ## Structura proiect
 
 ```text
