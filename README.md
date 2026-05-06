@@ -7,6 +7,7 @@ Perioada: 24 mar 2025 → 21 apr 2026, intraday. **Status: pipeline complet rula
 - 📋 [Plan proiect](docs/Plan_proiect_economie.md) — scope, ipoteze, pipeline, timeline 8 săpt
 - 📝 [Structura paper](docs/Structura_paper.md) — schema research paper EN (8-12 pag, APA 7)
 - 📊 [STATUS](docs/STATUS.md) — unde suntem, ce s-a făcut, ce mai e de făcut
+- 📈 [**Raport vizual complet (HTML)**](docs/report.html) — toate H1-H14 cu vizualizări, explicații detaliate, top case studies. Pentru a-l vedea: download fișierul și deschide-l local (GitHub afișează doar raw HTML, browser-ul îl renderizează corect)
 
 Versiunile `.docx` originale sunt în [docs/](docs/).
 

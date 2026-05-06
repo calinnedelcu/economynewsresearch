@@ -24,6 +24,167 @@ ASSETS = ["eurusd", "ndx"]
 WINDOWS_MIN = [1, 5, 15, 60, 240]
 
 
+HYPOTHESIS_DETAILS = {
+    "h1": {
+        "title": "H1 — Events mișcă piața peste volatilitatea normală",
+        "what": "Comparăm |Δ%| măsurat în jurul evenimentelor cu |Δ%| pe ferestre random din zile fără evenimente. Dacă events au reacții semnificativ mai mari → confirmă că news-urile FJ chiar mișcă piața.",
+        "test": "Mann-Whitney U one-sided (greater) + t-test Welch pe distribuții non-egale. Baseline: 30 ferestre random per event, evităm ±60min în jurul oricărui event.",
+        "interpretation": "<strong>Ratio events/baseline</strong> = de câte ori mai mare e mișcarea pe events vs random. Ratio &gt; 1 înseamnă piața reacționează la news.",
+        "result": "<strong>ULTRA-confirmat:</strong> ratio 1.6×–3.1× pe toate ferestrele × ambele assets, p &lt; 10⁻⁵⁹. NDX +1m: 3.1× (cea mai mare amplificare la moment scurt).",
+        "trader": "News-ul FJ chiar produce volatility spikes. Pentru strategie de <strong>volatility</strong> (straddles/strangles) e validare clară.",
+        "limitation": "H1 măsoară doar magnitudine, nu direcție (vezi H2). Și nu controlează pentru pre-event drift (vezi H8).",
+        "citation": "Andersen et al. (2003) — macro news → FX volatility intraday."
+    },
+    "h2": {
+        "title": "H2 — Sentimentul AI prezice direcția prețului",
+        "what": "Modelul DeepSeek clasifică sentiment_usd/sentiment_ndx ∈ {bull, bear, neutral}. Comparăm cu direcția realizată sign(Δ%) post-event. Hit rate = procent corect.",
+        "test": "Binomial test one-sided (greater) vs hazard 50% (excludem neutral).",
+        "interpretation": "<strong>Hit rate &gt; 50%</strong> = sentiment AI are edge direcțional. <strong>50%</strong> = pură întâmplare.",
+        "result": "<strong>NDX +5m: 53.7% (p=0.0016) ✅</strong>, NDX +1m: 52.9% (p=0.011). EUR/USD ~50% pe toate ferestrele = NEPREZICÂND. Pe NDX edge există dar e MIC (3-4% peste random).",
+        "trader": "<strong>NU folosi sentiment AI pentru trade direcțional pur.</strong> Edge e prea mic pe NDX (cost tranzacționare îl mănâncă), inexistent pe FX. Folosește pentru <em>filter</em> + magnitude.",
+        "limitation": "Hit rate scăzut pe FX poate însemna că (a) news-ul e deja prețuit înainte (pre-event drift, H8), sau (b) reacția FX e mai complexă decât bull/bear (volatility, range expansion).",
+        "citation": "Lopez-Lira & Tang (2024) — ChatGPT prezice 51.8 bp daily, dar pe orizont longer; Muhammad et al. (2025)."
+    },
+    "h3": {
+        "title": "H3 — Trendul zilei moderează impactul știrii",
+        "what": "Regresie OLS: |Δ%| = β₀ + β₁·sentiment + β₂·trend_zi + β₃·(sentiment × trend_zi). Termenul de interacțiune β₃ măsoară dacă news-urile aliniate cu trendul produc reacții mai mari (momentum) sau mai mici (mean reversion).",
+        "test": "OLS cu robust SE; testăm semnificația lui β₃.",
+        "interpretation": "<strong>β₃ &gt; 0</strong>: trend amplifică news-ul (momentum domină). <strong>β₃ &lt; 0</strong>: trend absoarbe news-ul (mean reversion). R² = % varianță explicată.",
+        "result": "<strong>NDX +5m: β₃=+0.038, p&lt;10⁻¹⁵, R²=0.16</strong> — trend AMPLIFICĂ news-ul. NDX +15m similar. EUR/USD: β₃ slight negativ pe ferestre scurte (mean reversion ușoară), dar R² mic (0.01-0.02).",
+        "trader": "Pe NDX, <strong>trade WITH the trend</strong> când news confirmă direcția. Bull news pe trend up → spike mare; bear news pe trend up → reacție amortizată. Implicație: confirmă prima trendul, apoi tradezi news-ul.",
+        "limitation": "Trend definit ca Δ% în ultimele 60min. Definiții alternative (SMA panta, ATR) pot da rezultate diferite.",
+        "citation": "Daniel-Hirshleifer-Subrahmanyam (1998) overconfidence model; Hong & Stein (1999) underreaction-overreaction."
+    },
+    "h4": {
+        "title": "H4 — Sentiment agregat în piață închisă prezice gap-ul de redeschidere",
+        "what": "Pentru fiecare perioadă cu piața închisă (weekend FX, overnight NDX), agregăm sentimentele tuturor news-urilor primite în interval (confidence-weighted). Testăm dacă acest agregat prezice gap-ul Δ%[close → open].",
+        "test": "OLS regresie: gap_pct ~ aggregate_sentiment, per asset.",
+        "interpretation": "<strong>β &gt; 0 cu p semnificativ</strong> = sentiment agregat → direcție gap. R² = puterea predicției.",
+        "result": "<strong>NDX (89 overnight periods): β=+0.27, p=0.011, R²=0.07</strong> ✅. EUR/USD (30 weekend periods): nesemnificativ (β=-0.08, p=0.17).",
+        "trader": "Pe <strong>overnight NDX</strong>: dacă sentiment agregat seara e bear, anticipă gap down de dimineață. Useful pentru poziționare overnight (futures, ETF afterhours). Pe <strong>FX weekend</strong>: nu funcționează (n mic + EUR/USD complexity).",
+        "limitation": "Closed periods FX (weekend-uri) sunt doar ~52/an = sample mic. NDX 89 overnight = mai bun. R²=0.07 = sentiment explică 7% din varianța gap-ului — restul e zgomot, alți factori.",
+        "citation": "Berkman et al. (2009) — overnight return drift după news."
+    },
+    "h5": {
+        "title": "H5 — `expected_magnitude` (low/med/high) prezice |Δ%| realizat",
+        "what": "Modelul DeepSeek estimează apriori dacă news-ul va produce mișcare low/med/high. Testăm dacă acest predictor coincide empiric cu magnitudinea realizată.",
+        "test": "ANOVA între cele 3 categorii pentru fiecare asset × fereastră.",
+        "interpretation": "<strong>F-stat mare cu p &lt; 0.05</strong> + ordinea low &lt; med &lt; high în mediile observate = modelul prezice corect magnitudinea.",
+        "result": "<strong>EUR/USD pe toate ferestrele: p &lt; 0.01</strong>, ordering corect (high &gt; med &gt; low). NDX semnificativ pe ferestre scurte (1m, 5m, 60m); pe 15m și 240m nesemnificativ.",
+        "trader": "Modelul AI poate fi folosit ca <strong>filter de relevanță</strong>: news-uri marcate `low` produc mișcări mici (poate skip), `high` produc mișcări mari (acolo te concentrezi).",
+        "limitation": "ANOVA nu controlează pentru categorie sau surprise. H13 (surprise_level) e signalul mai strong. Pentru NDX +15m semnal slab — magnitudinea poate să nu fie monotonică pe orizonturi medii.",
+        "citation": "Frazzini & Lamont (2007) — investor sentiment proxy validation."
+    },
+    "h6": {
+        "title": "H6 — Calibrarea `confidence` modelului",
+        "what": "Modelul DeepSeek dă un scor de încredere (0-1) pentru fiecare predicție. <strong>Calibration</strong> înseamnă că dacă zice `0.8 confidence`, hit rate observat ar trebui să fie ~80%. Testăm cu Brier score și reliability diagram (NDX +15m).",
+        "test": "Bucketing pe confidence + hit rate per bucket. Brier score = MSE între confidence și realized direction (lower=better; 0.25=random).",
+        "interpretation": "<strong>Diagrama de calibrare ar trebui să fie pe diagonală</strong>. Dacă e plată sau invers ordonată = modelul e overconfident sau under-confident.",
+        "result": "<strong>WEAKNESS: Brier=0.279</strong> (slightly above random 0.25). Hit rate plat ~50% pe TOATE buckets (40.7%, 53.4%, 52.2%, 50.8%) — modelul e <strong>OVERCONFIDENT</strong> pe predicții cu confidence &gt; 0.6. Confidence-ul nu reflectă acuratețea reală.",
+        "trader": "<strong>NU filtra trades pe `confidence > 0.8`</strong> crezând că-s mai sigure. Confidence-ul e <strong>decorativ</strong>, nu informativ. Pentru filter folosește `surprise_level` (H13) sau magnitude (H5).",
+        "limitation": "DeepSeek temperature 0.1 + few-shot prompts → confidence vine din distribuția probabilităților peste tokens, dar nu e calibrat pe ground truth. Fix posibil: post-hoc isotonic regression / Platt scaling pe 200 mostre etichetate (după ce le ai).",
+        "citation": "Lopez-Lira et al. (2025) — memorization & calibration caveats. Niculescu-Mizil & Caruana (2005) — calibration of supervised learning."
+    },
+    "h7": {
+        "title": "H7 — Categoriile diferite produc magnitudini diferite",
+        "what": "Categoriile noastre: geopolitical / central_bank / politics / energy / corporate / other. Testăm dacă |Δ%| diferă semnificativ între ele.",
+        "test": "ANOVA pe |Δ%[+15m]| ~ category, per asset.",
+        "interpretation": "<strong>F-stat mare + p &lt; 0.05</strong> = categoriile diferă. Tabel cu top categorii indică unde se concentrează mișcarea.",
+        "result": "<strong>EUR/USD: F=6.93, p&lt;10⁻⁴ ✅</strong> (categories matter). NDX: F=1.40, p=0.23 (NU diferă semnificativ — toate categoriile mișcă NDX similar).",
+        "trader": "Pe FX, focusează pe news <strong>central_bank</strong> și <strong>politics</strong> (probabil cele mai mari mișcări — verifică tabelul). Pe NDX, orice categorie producea mișcare comparabilă — <em>news-ul în general</em> contează, nu tipul.",
+        "limitation": "Categorizare automată prin keyword matching = imperfectă. Anumite news-uri pot fi mis-classified. NDX nu diferă pentru că e dominat de US politics/central bank, restul fiind diluție.",
+        "citation": "Ge, Kurov & Wolfe (2019) — Trump tweets per company effects."
+    },
+    "h8": {
+        "title": "H8 — Pre-event drift (information leakage / market efficiency)",
+        "what": "Compară |Δ%| în fereastra <strong>[-15m, 0]</strong> ÎNAINTE de event vs ferestre random fără event. Dacă pre-event &gt; baseline, sugerează că informația se mișcă în piață ÎNAINTE de a apărea pe FJ.",
+        "test": "Mann-Whitney U one-sided (greater) pe pre-event |Δ%| vs random baseline.",
+        "interpretation": "<strong>Pre &gt;&gt; baseline cu p semnificativ</strong> = leakage / front-running / surse mai rapide decât FJ. <strong>Pre ≈ baseline</strong> = piață eficientă, news shock instantaneu.",
+        "result": "<strong>🚨 LEAKAGE MAJOR: NDX pre-event |Δ%|=0.216 vs baseline 0.063 (3.4× mai mare), p=10⁻²⁹⁸</strong>. EUR/USD: 0.078 vs 0.028 (2.8× mai mare), p=10⁻²²³.",
+        "trader": "<strong>Implicație CRITICĂ: FJ NU e o sursă rapidă</strong>. Când vezi 🔴 BREAKING pe Discord, piața s-a mișcat deja masiv în ultimele 15min. Strategia greșită: scalp spike-ul direct. Strategia corectă: (a) intră POST-event pe momentum (vezi H9), sau (b) ai surse mai rapide (Bloomberg, Reuters direct).",
+        "limitation": "Magnitudinea drift-ului poate fi inflată de OUR own definition of event time (timestamp Discord, nu timpul real al news-ului — ex: o știre publicată pe Reuters la 14:50 UTC poate ajunge pe FJ la 14:53 UTC, deci 'pre-event drift' între 14:48-14:53 e de fapt post-event Reuters).",
+        "citation": "Bartov, Faurel & Mohanram (2018) — leakage detection în social media; Patell (1979) — original event study methodology."
+    },
+    "h9": {
+        "title": "H9 — Persistență vs decay al impactului news-ului",
+        "what": "Pentru fiecare event, comparăm sign(Δ%[+15m]) cu sign(Δ%[+4h]). Sign-match &gt; 50% = mișcarea persistă. Plus median ratio |Δ%[+4h]| / |Δ%[+15m]| pentru a vedea dacă magnitudinea crește sau scade.",
+        "test": "Binomial test pe sign-match vs 50% (two-sided).",
+        "interpretation": "<strong>Sign-match &gt; 50% și ratio &gt; 1</strong> = momentum, news-ul amplifică în timp. <strong>Sign-match &lt; 50%</strong> = mean reversion / overreaction urmată de corecție.",
+        "result": "<strong>💡 EUR/USD: sign-match 59.3%, p&lt;10⁻¹⁶, ratio 3.04. NDX: 60.4%, p&lt;10⁻¹⁶, ratio 4.12.</strong> Magnitudinea CREȘTE 3-4× între +15m și +4h. <strong>Nu fade — amplificare!</strong>",
+        "trader": "Strategie: <strong>HOLD pentru ore, nu minute</strong>. News produce momentum care continuă 30min-4h. Stop-loss-uri largi. NU fade-ui breaking news pe NDX în primele 4h. Asta contrazice teoria overshoot+reversal pe orizonturi scurte.",
+        "limitation": "Ratio 3-4× include și natural drift baseline; strict abnormal return ar avea ratio mai mic. Dar sign-match 60% e robust. Posibil că info se procesează gradual (under-reaction Hong-Stein 1999).",
+        "citation": "Hong & Stein (1999) — gradual information diffusion; Tetlock (2007) — sentiment persistence in returns."
+    },
+    "h10": {
+        "title": "H10 — Reacție de volum la events",
+        "what": "Volume_ratio = volume cumulativ în fereastra event / volume mediu pe baseline 30 zile la aceeași oră. Dacă ratio &gt; 1, volumul reacționează la news (signal de validare market participation).",
+        "test": "Wilcoxon signed-rank one-sided (volume_ratio &gt; 1).",
+        "interpretation": "<strong>Median ratio &gt; 1 cu p semnificativ</strong> = volume confirmation. <strong>Ratio ≈ 1</strong> = mișcare de preț fără volume = posibil spike artificial.",
+        "result": "Output relativ slab pe full data (volume Dukascopy CFD pentru NDX e proxy, nu real exchange volume; EUR/USD e volume broker, nu interbank). <strong>Necesită debug suplimentar</strong> pentru raportare în paper.",
+        "trader": "Volume confirmation matter: o mișcare de preț pe news cu volume puternic = trend valid. Pe news cu volume slab = posibil spike thin liquidity, mai puțin actionable.",
+        "limitation": "Dukascopy CFD volume nu reflectă volume real CME futures (NDX) sau interbank (EUR/USD). Pentru paper rigoros, e bine să notăm asta și să folosim volume CME pentru NDX dacă e disponibil.",
+        "citation": "Easley & O'Hara (1992) — volume as information signal; Lee (1992) — earnings news volume reaction."
+    },
+    "h11": {
+        "title": "H11 — Time-of-day & day-of-week moderează impactul",
+        "what": "Testăm dacă |Δ%| la +15m diferă funcție de ora UTC sau ziua săptămânii. Anumite ore (US open, FOMC days) ar putea avea reacții mai mari.",
+        "test": "ANOVA |Δ%| ~ hour_utc; ANOVA |Δ%| ~ dow.",
+        "interpretation": "<strong>F-stat mare + p &lt; 0.05</strong> = timing matter. Top hours/days indică unde să-ți concentrezi atenția.",
+        "result": "<strong>EUR/USD: hour F=4.98, p=10⁻¹²; dow F=9.97, p=10⁻⁹ ✅</strong>. <strong>NDX: hour F=2.74, p=10⁻⁵; dow F=4.81, p=10⁻⁴ ✅</strong>. Ambele timing dimensions sunt semnificative.",
+        "trader": "Trade <strong>doar în orele/zilele cu impact mare</strong>. NY open (13:30-15:00 UTC) și FOMC announcements (~18:00 UTC) sunt ferestre de focus. Marți-joi tipic mai active decât vinerea după-amiaza (poziționare pre-weekend).",
+        "limitation": "Top hours/days nu sunt extrase aici (necesită script suplimentar). ANOVA e high-level — interaction hour×category n-am testat.",
+        "citation": "Andersen & Bollerslev (1998) — intraday seasonality FX volatility; Harvey & Huang (1991) — open/close patterns."
+    },
+    "h12": {
+        "title": "H12 — Asimetrie bear vs bull (loss aversion / fear premium)",
+        "what": "Behavioral finance prezice că news-urile bear produc mișcări mai mari decât bull (loss aversion Kahneman-Tversky, fear premium VIX literature). Testăm |Δ%|_bear vs |Δ%|_bull.",
+        "test": "Mann-Whitney U one-sided (bear > bull).",
+        "interpretation": "<strong>Ratio bear/bull &gt; 1 cu p semnificativ</strong> = asimetrie confirmată. <strong>Ratio ≈ 1</strong> = simetrie (contraintuitiv).",
+        "result": "<strong>SURPRINZĂTOR: asimetrie minimă.</strong> Ratio 0.91-1.11 pe toate ferestrele. EUR/USD: nici un p &lt; 0.05. NDX +1m: ratio 1.11, p=0.04 marginal.",
+        "trader": "<strong>Nu există fear premium clar pe această perioadă.</strong> Position sizing simetric pe bull și bear news. Posibil că market-ul a internalizat already-frequent shocks (Trump volatility, geopolitical) → desensibilizare.",
+        "limitation": "Eșantionul (2025-2026) poate fi atipic — Trump-era volatility. Pe alte perioade (2008, 2020 COVID) asimetria poate fi mai pronunțată. NU putem generaliza la alte regimuri.",
+        "citation": "Kahneman & Tversky (1979) prospect theory; Bekaert & Hoerova (2014) — uncertainty asymmetry."
+    },
+    "h13": {
+        "title": "H13 — `surprise_level` (expected/surprise/shock) prezice magnitudinea",
+        "what": "Câmp NOU în schema sentiment: surprise_level. Modelul DeepSeek clasifică news-ul ca expected/surprise/shock. Testăm dacă această clasificare prezice empiric |Δ%|.",
+        "test": "ANOVA |Δ%| ~ surprise_level, per asset × fereastră.",
+        "interpretation": "<strong>Ordering expected &lt; surprise &lt; shock</strong> + p semnificativ = modelul prezice corect surpriza.",
+        "result": "<strong>💥 NDX +1m: expected=0.042, surprise=0.051, shock=0.085 — exact 2× expected!</strong> F=13.85, p=10⁻⁶. NDX +5m similar (F=7.17, p&lt;10⁻³). EUR/USD +1m semnificativ marginal (p=0.04).",
+        "trader": "<strong>Cea mai actionable descoperire pentru position sizing.</strong> Folosește surprise_level ca multiplicator: <code>expected → 0.5× size</code>, <code>surprise → 1× size</code>, <code>shock → 2× size</code>. Modelul AI captează intensitatea util pentru risk management.",
+        "limitation": "Pe ferestre lungi (60m, 240m) signalul fade — surprise_level e relevant doar pentru reacție imediată. Plus: shock e rare (puține events), categoria poate fi dezechilibrată.",
+        "citation": "Birz & Lott (2011) — news surprise economic announcements; Beaver (1968) earnings surprise."
+    },
+    "h14": {
+        "title": "H14 — Cross-asset spillover (NDX × EUR/USD)",
+        "what": "Pentru fiecare event cu ambele Δ% disponibile, calculăm corelația per-event NDX vs EUR/USD. Risk-off classic prezice negative correlation (USD up, NDX down).",
+        "test": "Pearson + Spearman correlation; sign-match rate (binomial).",
+        "interpretation": "<strong>Pearson &lt; 0</strong> = anti-corelație risk-off. <strong>Sign-match &gt; 50%</strong> = aceeași direcție mai des. Cele două pot fi inconsistente dacă mișcările extreme diferă în magnitudine.",
+        "result": "<strong>Pearson r=-0.108, p=10⁻⁶</strong> (negativ semnificativ — risk-off pattern). Dar <strong>sign-match=54.8%</strong>, p=10⁻⁵ (slightly positive). Inconsistență interesantă.",
+        "trader": "<strong>NU presupune corelație simplă</strong>. La nivel de direcție concordă (54.8%), dar magnitudinile se mișcă diferit. NDX e amplificator de risc; EUR/USD e mai stabil. Pentru hedging: NDX hedge cu EUR/USD funcționează doar în events extreme risk-off, nu în general.",
+        "limitation": "Folosim simple per-event correlation pe Δ% +15m. Lead-lag analysis (NDX lead EUR/USD?) n-am făcut. Plus: only events with both assets present (intraday windows) — exclude weekend/overnight.",
+        "citation": "Bollerslev, Engle & Wooldridge (1988) — multivariate GARCH; Forbes & Rigobon (2002) — contagion vs interdependence."
+    },
+}
+
+
+def render_explanation(h_id: str) -> str:
+    d = HYPOTHESIS_DETAILS.get(h_id)
+    if not d:
+        return ""
+    return f"""
+<div class='h-explain'>
+  <div class='h-block'><span class='h-label'>📖 Ce testează:</span> {d['what']}</div>
+  <div class='h-block'><span class='h-label'>🧪 Test statistic:</span> {d['test']}</div>
+  <div class='h-block'><span class='h-label'>🔍 Cum interpretezi:</span> {d['interpretation']}</div>
+  <div class='h-block result-box'><span class='h-label'>📊 Rezultat:</span> {d['result']}</div>
+  <div class='h-block trader-box'><span class='h-label'>💼 Implicație practică (trader):</span> {d['trader']}</div>
+  <div class='h-block warn-box'><span class='h-label'>⚠️ Limitări:</span> {d['limitation']}</div>
+  <div class='h-block muted'><span class='h-label'>📚 Literatură relevantă:</span> {d['citation']}</div>
+</div>
+"""
+
+
 def fig_to_base64(fig) -> str:
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=110, bbox_inches="tight")
@@ -456,6 +617,19 @@ h3 { color: #555; margin-top: 22px; }
 .event-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; margin-bottom: 18px; background: #fcfcfc; }
 .muted { color: #888; font-size: 12px; }
 code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+.h-explain { background: #fafafa; border-left: 4px solid #1f77b4; padding: 14px 18px; margin: 12px 0 18px; border-radius: 4px; font-size: 14px; line-height: 1.55; }
+.h-block { margin: 8px 0; }
+.h-label { font-weight: 600; color: #1f77b4; display: inline-block; min-width: 0; margin-right: 6px; }
+.h-explain .result-box { background: #e8f5e9; border-left: 3px solid #2ca02c; padding: 8px 12px; border-radius: 3px; }
+.h-explain .trader-box { background: #fff8e1; border-left: 3px solid #f57c00; padding: 8px 12px; border-radius: 3px; }
+.h-explain .warn-box { background: #ffebee; border-left: 3px solid #c62828; padding: 8px 12px; border-radius: 3px; }
+.h-explain .muted { font-size: 12px; color: #666; }
+.toc { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 22px; border-radius: 6px; margin: 18px 0; }
+.toc h3 { margin: 0 0 10px; color: #444; }
+.toc ul { columns: 2; -webkit-columns: 2; -moz-columns: 2; list-style: none; padding-left: 0; }
+.toc li { margin: 4px 0; }
+.toc a { color: #1f77b4; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
 </style></head><body>""")
 
     parts.append(f"<h1>Event Study Report — FJ News vs EUR/USD &amp; Nasdaq-100</h1>")
@@ -491,6 +665,25 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
                          f"({date_min.strftime('%Y-%m-%d')} → {date_max.strftime('%Y-%m-%d')}). "
                          f"Putere statistică completă.</div>")
 
+    # Table of contents
+    parts.append("""<div class='toc'><h3>📑 Cuprins (click pentru navigare)</h3><ul>
+<li><a href='#h1'>H1 — Magnitudine peste random</a></li>
+<li><a href='#h2'>H2 — Sentiment prezice direcția</a></li>
+<li><a href='#h3'>H3 — Sentiment × trend</a></li>
+<li><a href='#h4'>H4 — Closed-period gap</a></li>
+<li><a href='#h5'>H5 — Magnitude prediction</a></li>
+<li><a href='#h6'>H6 — Calibration</a></li>
+<li><a href='#h7'>H7 — Per-category</a></li>
+<li><a href='#h8'>H8 — Pre-event drift 🚨</a></li>
+<li><a href='#h9'>H9 — Persistență 💡</a></li>
+<li><a href='#h10'>H10 — Volume reaction</a></li>
+<li><a href='#h11'>H11 — Time-of-day</a></li>
+<li><a href='#h12'>H12 — Bear vs bull</a></li>
+<li><a href='#h13'>H13 — Surprise level 💥</a></li>
+<li><a href='#h14'>H14 — Cross-asset</a></li>
+<li><a href='#cases'>🔍 Top case studies</a></li>
+</ul></div>""")
+
     parts.append("<h2>📋 Events analizate</h2>")
     show_cols = ["timestamp_utc", "category", "sentiment_usd", "sentiment_ndx",
                  "expected_magnitude", "confidence", "content"]
@@ -502,8 +695,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         ev_show["timestamp_utc"] = pd.to_datetime(ev_show["timestamp_utc"]).dt.strftime("%Y-%m-%d %H:%M")
     parts.append(render_table(ev_show))
 
-    parts.append("<h2>📈 H1 — magnitudine events vs random baseline</h2>")
-    parts.append("<p>Compară |Δ%| pe ferestre fixe între evenimente și ferestre random din zile fără știri (one-sided Mann-Whitney U).</p>")
+    parts.append("<h2 id='h1'>📈 H1 — magnitudine events vs random baseline</h2>")
+    parts.append(render_explanation("h1"))
     fig = plot_h1(h1_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H1 events vs baseline"))
@@ -514,8 +707,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         "u_stat": "{:.0f}", "p_mwu": "{:.4f}",
     }))
 
-    parts.append("<h2>🎯 H2 — sentiment prezice direcția?</h2>")
-    parts.append("<p>Hit rate = procent evenimente unde sentiment_pred (bull/bear) coincide cu sign(Δ%) realizat. Liniuța 50% = pură întâmplare.</p>")
+    parts.append("<h2 id='h2'>🎯 H2 — sentiment prezice direcția?</h2>")
+    parts.append(render_explanation("h2"))
     fig = plot_h2(h2_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H2 hit rates"))
@@ -524,8 +717,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         "hit_rate": "{:.1%}", "p_binom": "{:.4f}",
     }))
 
-    parts.append("<h2>🔬 H3 — sentiment × trend interaction (OLS)</h2>")
-    parts.append("<p>Regresie <code>|Δ%| ~ sentiment + trend_zi + sentiment×trend_zi</code>. Coeficient β_interaction semnificativ → trendul moderează impactul știrii.</p>")
+    parts.append("<h2 id='h3'>🔬 H3 — sentiment × trend interaction (OLS)</h2>")
+    parts.append(render_explanation("h3"))
     fig = plot_h3_scatter(returns_df)
     parts.append(img_tag(fig_to_base64(fig), "H3 scatter sentiment vs realized"))
     parts.append("<h3>Tabel detaliat H3</h3>")
@@ -536,7 +729,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         "coef_interaction": "{:+.4f}", "p_interaction": "{:.3f}",
     }))
 
-    parts.append("<h2>🌙 H4 — closed-period gap regression</h2>")
+    parts.append("<h2 id='h4'>🌙 H4 — closed-period gap regression</h2>")
+    parts.append(render_explanation("h4"))
     if h4_df.empty:
         parts.append("<p class='muted'>Pilot are 0 events în closed periods (toate sunt intraday luni 20 apr 2026). "
                      "Pe export-ul complet — weekend FX (~52/an) + overnight NDX (~280/an) — H4 va avea date suficiente.</p>")
@@ -546,8 +740,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         }, max_rows=200))
 
     # ----- H5 magnitude -----
-    parts.append("<h2>📐 H5 — `expected_magnitude` prezice |Δ%|</h2>")
-    parts.append("<p>Modelul DeepSeek prezice categoria de magnitudine (low/med/high). Verificăm dacă coincide empiric cu |Δ%| realizat.</p>")
+    parts.append("<h2 id='h5'>📐 H5 — `expected_magnitude` prezice |Δ%|</h2>")
+    parts.append(render_explanation("h5"))
     fig = plot_h5_magnitude(h5_df, returns_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H5"))
@@ -557,8 +751,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H6 calibration -----
-    parts.append("<h2>🎯 H6 — calibrare confidence (NDX +15m)</h2>")
-    parts.append("<p>Buckets de confidence vs hit rate observat. Diagrama de fiabilitate trebuie să fie aproape de diagonală.</p>")
+    parts.append("<h2 id='h6'>🎯 H6 — calibrare confidence (NDX +15m)</h2>")
+    parts.append(render_explanation("h6"))
     fig = plot_h6_calibration(h6_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H6 calibration"))
@@ -567,8 +761,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H7 category -----
-    parts.append("<h2>🗂️ H7 — efect per categorie</h2>")
-    parts.append("<p>Care categorii de știri produc cele mai mari mișcări? ANOVA pe |Δ%| la fereastra +15m.</p>")
+    parts.append("<h2 id='h7'>🗂️ H7 — efect per categorie</h2>")
+    parts.append(render_explanation("h7"))
     fig = plot_h7_category(h7_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H7 category"))
@@ -578,8 +772,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H8 pre-event drift -----
-    parts.append("<h2>⏪ H8 — pre-event drift (market efficiency)</h2>")
-    parts.append("<p>Compară |Δ%| în [-15m, 0] înainte de event vs post-event +15m vs random baseline. Pre &gt; baseline = leakage / front-running posibil.</p>")
+    parts.append("<h2 id='h8'>⏪ H8 — pre-event drift (market efficiency / leakage)</h2>")
+    parts.append(render_explanation("h8"))
     fig = plot_h8_drift(h8_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H8 drift"))
@@ -592,8 +786,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H9 decay -----
-    parts.append("<h2>📉 H9 — persistență vs decay</h2>")
-    parts.append("<p>Mișcarea la +15m persistă spre +4h sau revertește? Sign agreement între ferestre.</p>")
+    parts.append("<h2 id='h9'>📉 H9 — persistență vs decay</h2>")
+    parts.append(render_explanation("h9"))
     fig = plot_h9_decay(h9_df, returns_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H9 decay"))
@@ -603,8 +797,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H10 volume -----
-    parts.append("<h2>📊 H10 — reacție de volum</h2>")
-    parts.append("<p>Volumul tradat în fereastra eveniment vs volum mediu pe baseline (medie pe 30 zile, aceeași oră). Wilcoxon &gt;1.</p>")
+    parts.append("<h2 id='h10'>📊 H10 — reacție de volum</h2>")
+    parts.append(render_explanation("h10"))
     fig = plot_h10_volume(h10_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H10 volume"))
@@ -614,8 +808,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H11 time of day -----
-    parts.append("<h2>🕐 H11 — efect time-of-day</h2>")
-    parts.append("<p>Distribuția |Δ%| pe ora UTC (+15m). ANOVA pe ore + zile săptămânii.</p>")
+    parts.append("<h2 id='h11'>🕐 H11 — efect time-of-day & day-of-week</h2>")
+    parts.append(render_explanation("h11"))
     fig = plot_h11_tod(returns_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H11 time-of-day"))
@@ -625,8 +819,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H12 asymmetric -----
-    parts.append("<h2>⚖️ H12 — asimetrie bear vs bull</h2>")
-    parts.append("<p>Loss aversion / fear premium: news bear produc mișcări mai mari decât news bull?</p>")
+    parts.append("<h2 id='h12'>⚖️ H12 — asimetrie bear vs bull</h2>")
+    parts.append(render_explanation("h12"))
     fig = plot_h12_asymmetric(h12_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H12 asymmetric"))
@@ -637,8 +831,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H13 surprise -----
-    parts.append("<h2>💥 H13 — surprise_level → magnitudine</h2>")
-    parts.append("<p>Câmp nou de sentiment: `expected / surprise / shock`. Verificăm corelația cu |Δ%|.</p>")
+    parts.append("<h2 id='h13'>💥 H13 — surprise_level → magnitudine</h2>")
+    parts.append(render_explanation("h13"))
     fig = plot_h13_surprise(h13_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H13 surprise"))
@@ -648,8 +842,8 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
     }))
 
     # ----- H14 spillover -----
-    parts.append("<h2>🔀 H14 — cross-asset spillover</h2>")
-    parts.append("<p>Per-event corelație între Δ% NDX și Δ% EUR/USD la +15m. Scatter cu fit OLS.</p>")
+    parts.append("<h2 id='h14'>🔀 H14 — cross-asset spillover</h2>")
+    parts.append(render_explanation("h14"))
     fig = plot_h14_spillover(returns_df)
     if fig is not None:
         parts.append(img_tag(fig_to_base64(fig), "H14 spillover"))
@@ -659,7 +853,7 @@ code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12p
         "sign_match_rate": "{:.1%}", "p_binom_sign": "{:.4g}",
     }))
 
-    parts.append("<h2>🔍 Top-10 case studies (cele mai mari mișcări)</h2>")
+    parts.append("<h2 id='cases'>🔍 Top-10 case studies (cele mai mari mișcări)</h2>")
     parts.append("<p>Cele mai mari mișcări absolute pe NDX la fereastra +15m. Linia neagră întreruptă = momentul evenimentului. Liniile gri punctate = ferestrele [+1m, +5m, +15m, +1h, +4h].</p>")
 
     # Pick top events by abs delta_pct on NDX +15m
@@ -706,6 +900,8 @@ def main():
     p.add_argument("--prices-dir", default="outputs")
     p.add_argument("--results-dir", default="outputs")
     p.add_argument("--output", default="outputs/report.html")
+    p.add_argument("--also-copy", default=None,
+                   help="Optional second path to write the report to (e.g. docs/report.html for GitHub)")
     p.add_argument("--no-open", action="store_true", help="Don't open browser")
     args = p.parse_args()
 
@@ -735,6 +931,11 @@ def main():
     print(f"Building report from {len(events)} events ...")
     build_html(events, returns_df, hyp_dfs, prices_eur, prices_ndx, args.output)
     print(f"Wrote {args.output}")
+    if args.also_copy:
+        Path(args.also_copy).parent.mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.copy(args.output, args.also_copy)
+        print(f"Also copied to {args.also_copy}")
     if not args.no_open:
         webbrowser.open(f"file:///{Path(args.output).resolve()}")
         print("Opened in browser.")
