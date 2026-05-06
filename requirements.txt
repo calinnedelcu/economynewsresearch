@@ -1,12 +1,15 @@
-# Etapa 2 (parser): stdlib only.
+# Parser: stdlib only.
 
-# Etapa 3 (download prețuri):
+# Price download
 dukascopy-python>=4.0
-pandas>=2.0
 
-# Etapa 4 (sentiment classification):
+# Data processing and statistical analysis
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+statsmodels>=0.14
+matplotlib>=3.8
+
+# Sentiment classification
 openai>=2.0
 python-dotenv>=1.0
-
-# Etapa 5 (analiză) - de adăugat:
-# numpy, scipy, statsmodels, matplotlib

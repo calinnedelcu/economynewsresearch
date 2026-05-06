@@ -39,6 +39,13 @@ KEYWORDS_ENERGY = [
     "opec", "oil ", "crude", "brent", "wti", "natural gas", "lng", "barrel",
     "saudi aramco",
 ]
+KEYWORDS_CORPORATE = [
+    "earnings", "revenue", "profit", "guidance", "eps", "stock down", "stock up",
+    "shares", "after-hours", "premarket", "merger", "acquisition", "buyback",
+    "dividend", "layoffs", "lawsuit", "sec filing", "ipo", "bankruptcy",
+    "nvidia", "nvda", "microsoft", "msft", "apple", "aapl", "tesla", "tsla",
+    "meta", "amazon", "amzn", "google", "alphabet", "googl", "amd", "intel",
+]
 
 
 def classify(content: str, is_macro: bool) -> str:
@@ -63,6 +70,8 @@ def classify(content: str, is_macro: bool) -> str:
         return "politics"
     if hit(KEYWORDS_ENERGY):
         return "energy"
+    if hit(KEYWORDS_CORPORATE):
+        return "corporate"
     return "other"
 
 

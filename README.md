@@ -1,132 +1,136 @@
-# Studiu știri online vs prețuri (EUR/USD + Nasdaq-100)
+# Studiu stiri online vs preturi intraday
 
-Perioada: 24 mar 2025 → 21 apr 2026, intraday. **Status: pipeline complet rulat, toate 14 ipoteze testate cu rezultate semnificative.**
+Event-study pe stiri FinancialJuice Discord si preturi intraday EUR/USD + Nasdaq-100.
 
-## 📄 Documente
+Perioada disponibila in exportul de stiri: `2025-03-24` -> `2026-05-05`.
+Perioada comuna folosita in analiza curenta: `2025-03-24` -> `2026-05-05`.
 
-- 📋 [Plan proiect](docs/Plan_proiect_economie.md) — scope, ipoteze, pipeline, timeline 8 săpt
-- 📝 [Structura paper](docs/Structura_paper.md) — schema research paper EN (8-12 pag, APA 7)
-- 📊 [STATUS](docs/STATUS.md) — unde suntem, ce s-a făcut, ce mai e de făcut
-- 📈 [**Raport vizual complet (HTML)**](docs/report.html) — toate H1-H14 cu vizualizări, explicații detaliate, top case studies. Pentru a-l vedea: download fișierul și deschide-l local (GitHub afișează doar raw HTML, browser-ul îl renderizează corect)
+## Status curent
 
-Versiunile `.docx` originale sunt în [docs/](docs/).
+Pipeline-ul tehnic este rulat end-to-end, dar rezultatele trebuie tratate ca rezultate de research corectate, nu ca versiunea initiala optimista.
 
-## 🎯 Rezultate cheie (toate cu p < 0.05)
+Corectii metodologice aplicate:
 
-| H | Finding | Numere |
-|---|---|---|
-| **H1** | Events mișcă piața 2-3× peste random | p < 10⁻⁵⁹, toate ferestrele × ambele assets |
-| **H2** | Sentiment prezice direcția NDX scurt | hit_rate 53.7% NDX +5m, p=0.0016 |
-| **H3** | Sentiment × trend interaction NDX | R²=0.16, p<10⁻¹⁵ pe NDX +5m |
-| **H4** | Overnight NDX gap prezis | β=+0.27, p=0.011 |
-| **H5** | Magnitudine prediction validată | F-test p<0.05 majoritate ferestre |
-| **H6** | Calibration weakness | Brier 0.279 (overconfident pe >0.6) |
-| **H7** | Per-category effect EUR/USD | F=6.93, p<10⁻⁴ |
-| **H8** 🚨 | **Pre-event drift = leakage signal** | NDX 3.4× over baseline, p=10⁻²⁹⁸ |
-| **H9** | Persistență confirmată | sign-match 60%, p<10⁻¹⁶, magnitudine ×3-4 |
-| **H11** | Time-of-day & DOW efecte | F=4.98 EUR, F=2.74 NDX, p<10⁻⁴ |
-| **H12** | Asimetrie bear vs bull mică | doar NDX +1m marginal (p=0.04) |
-| **H13** 💥 | **Surprise level prezice magnitudine** | NDX shock 2× expected, p=10⁻⁶ |
-| **H14** | Cross-asset spillover risk-off | Pearson r=-0.108, p=10⁻⁶ |
+- ferestrele post-event incep la primul minut complet dupa timestamp-ul stirii;
+- evenimentele din afara intervalului comun de preturi sunt eliminate automat;
+- `sentiment_usd` este evaluat contra unui proxy USD corect: `-EUR/USD`, nu direct contra EUR/USD;
+- stirile apropiate sunt grupate in clustere de 15 minute, iar testele non-regresie folosesc primul eveniment per cluster;
+- baseline-ul random este matched pe ora UTC si ziua saptamanii, cu buffer de excludere in jurul evenimentelor;
+- regresiile folosesc erori robuste/clusterizate;
+- toate p-value-urile din output primesc q-value Benjamini-Hochberg FDR;
+- H10 include explicit caveat-ul ca volumul Dukascopy este proxy/tick volume.
 
-## Structură
+Validator:
 
+```bash
+.venv/Scripts/python.exe validate_outputs.py
 ```
-parse_fj_discord.py     # etapa 2: JSON Discord → events.csv
-download_prices.py      # etapa 3: Dukascopy → prices_eurusd.csv, prices_ndx.csv
-sentiment.py            # etapa 4: DeepSeek V4 Flash → events_sentiment.csv
-compare_models.py       # A/B test Flash vs Pro (200 mostre, justificare empirică)
-event_study.py          # etapa 5: H1-H14 tests → results CSVs + figures
-make_report.py          # raport HTML self-contained (toate H, top case studies)
-data/                   # JSON-uri Discord (gitignored)
-outputs/                # CSV-uri, cache, figures, report.html (gitignored)
+
+Output asteptat:
+
+```text
+OK: outputs passed methodology sanity checks
+```
+
+## Rezultate cheie dupa corectii
+
+| H | Verdict curent | Interpretare scurta |
+|---|---|---|
+| H1 | robust | Evenimentele au miscari absolute peste baseline pe ambele active si toate ferestrele. |
+| H2 | modest / mixed | Edge directional mic; dupa FDR ramane semnificativ doar un subset restrans. |
+| H3 | partial | Interactiunea sentiment x trend ramane relevanta mai ales pe NDX +5m/+15m. |
+| H4 | partial | NDX closed-period gap are semnal; EUR/USD este marginal/nesemnificativ. |
+| H5 | slab / partial | `expected_magnitude` ajuta limitat, mai ales NDX +1m. |
+| H6 | slab | `confidence` este overconfident; nu trebuie folosit ca probabilitate calibrata. |
+| H7 | partial | Categoriile conteaza modest pentru EUR/USD, nu clar pentru NDX. |
+| H8 | robust, dar caveat | Pre-event drift > baseline, dar poate indica lag al feed-ului, nu neaparat front-running. |
+| H9 | robust | Miscarea tinde sa persiste intre +15m si +4h. |
+| H10 | proxy evidence | Volumul proxy creste in jurul stirilor, dar sursa nu e volum consolidat. |
+| H11 | partial | Time-of-day conteaza pentru EUR/USD; semnalul pe NDX este mai slab dupa clustering. |
+| H12 | slab | Asimetria bear vs bull este mica. |
+| H13 | slab / partial | `surprise_level` ajuta mai ales pentru NDX pe ferestre scurte. |
+| H14 | robust, interpretare atenta | Corelatia EUR/USD vs NDX este negativa; USD proxy vs NDX este pozitiva prin conventie. |
+
+Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
+
+- `outputs/report.html`
+- `docs/report.html`
+
+## Structura proiect
+
+```text
+parse_fj_discord.py     # DiscordChatExporter JSON -> outputs/events.csv
+download_prices.py      # Dukascopy EUR/USD + E_NQ-100 1m -> outputs/prices_*.csv
+sentiment.py            # DeepSeek-compatible API -> outputs/events_sentiment.csv
+compare_models.py       # Flash vs Pro A/B agreement sample
+event_study.py          # event-study core, H1-H14, FDR q-values
+make_report.py          # HTML report generated from current outputs
+validate_outputs.py     # sanity checks for methodology-sensitive outputs
+prepare_manual_validation.py  # 200-row sample for human annotation
+score_manual_validation.py    # Cohen's kappa + F1 after labels are filled
+data/                   # local raw JSON exports, gitignored
+outputs/                # generated CSVs, figures, report, cache, gitignored
+docs/                   # project notes and copied report
 ```
 
 ## Setup
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt   # Windows
-# source .venv/bin/activate && pip install -r requirements.txt   # Linux/Mac
+.venv/Scripts/python.exe -m pip install -r requirements.txt
 ```
 
-## Cum rulezi
+Sentiment classification necesita `.env`:
 
-### Etapa 2 — parse export Discord
-```bash
-python parse_fj_discord.py "data/FinancialJuice ... .json" -o outputs/events.csv --summary
-```
-
-Coloane în `events.csv`:
-
-| coloană | ce e |
-|---|---|
-| `id` | Discord message ID |
-| `timestamp_utc` | UTC ISO-8601 |
-| `author` | nume autor |
-| `content` | text complet |
-| `has_red_dot` | conține 🔴 |
-| `has_warning` | conține ⚠ |
-| `is_breaking` | conține "BREAKING" |
-| `is_macro` | conține `$MACRO` (date programate) |
-| `is_url_only` | doar URL în mesaj |
-| `category` | macro_release / central_bank / geopolitical / politics / energy / other |
-| `is_gold` | `(has_red_dot OR is_breaking) AND NOT is_macro` — filtru pentru event study |
-
-### Etapa 3 — download prețuri (Dukascopy)
-```bash
-.venv/Scripts/python.exe download_prices.py --start 2026-04-15 --end 2026-04-21
-```
-
-Scrie `outputs/prices_eurusd.csv` și `outputs/prices_ndx.csv` cu OHLCV 1-minut.
-
-Instrumentele Dukascopy folosite:
-- **EUR/USD** spot FX (24/5, weekend break vineri seara)
-- **E_NQ-100** CFD index (închis weekend; corespunde futures NQ)
-
-Note timezone: toate timestamp-urile sunt **UTC** la sursă, fără conversie locală.
-
-### Etapa 4 — sentiment classification (DeepSeek V4 Flash)
-
-Necesită cheie API DeepSeek în `.env`:
-```
+```text
 DEEPSEEK_API_KEY=sk-...
 ```
 
-Rulare:
+## Rulare pipeline
+
 ```bash
-.venv/Scripts/python.exe sentiment.py outputs/events.csv -o outputs/events_sentiment.csv
-```
+# 1. Parse Discord export
+.venv/Scripts/python.exe parse_fj_discord.py "data/FinancialJuice ... .json" -o outputs/events.csv --summary
 
-Adaugă la fiecare eveniment:
-- `sentiment_usd`, `sentiment_ndx` ∈ {bull, bear, neutral}
-- `expected_magnitude` ∈ {low, med, high}
-- `confidence` ∈ [0, 1]
-- `rationale` — propoziție scurtă
+# 2. Preturi. Default: 2025-03-24 -> azi UTC
+.venv/Scripts/python.exe download_prices.py --start 2025-03-24 --merge-existing
 
-Cache local SQLite (`outputs/sentiment_cache.sqlite`) — re-rularea pe aceleași evenimente nu re-cheltuiește credit API.
+# 3. Sentiment LLM, cu cache SQLite
+.venv/Scripts/python.exe sentiment.py outputs/events.csv -o outputs/events_sentiment.csv --workers 15
 
-**Justificare model** (pentru paper Methodology):
-- Muhammad et al. (2025) — DeepSeek-R1 ranks among top performers on Target-Based Financial Sentiment Analysis
-- Wu et al. (2025) — reasoning models nu îmbunătățesc sentiment financiar → folosim Flash, nu Pro
-- Open weights → reproducibility academic
-- Cost ~$0.20 pentru 1000 events vs $20+ pentru frontier closed-source
-
-### Etapa 5 — event study + teste statistice
-```bash
+# 4. Event study core
 .venv/Scripts/python.exe event_study.py
+
+# 5. Validare output-uri
+.venv/Scripts/python.exe validate_outputs.py
+
+# 6. Raport HTML
+.venv/Scripts/python.exe make_report.py --also-copy docs/report.html
+
+# 7. Esantion pentru validare manuala
+.venv/Scripts/python.exe prepare_manual_validation.py
+
+# Dupa ce etichetatorii completeaza CSV-ul:
+.venv/Scripts/python.exe score_manual_validation.py
 ```
 
-Rulează 4 ipoteze pe ferestrele [0,+1m], [0,+5m], [0,+15m], [0,+1h], [0,+4h]:
+## Output-uri principale
 
-- **H1**: |Δ%| events vs distribuție null random (t-test + Mann-Whitney U)
-- **H2**: sentiment-direction agreement (matrice confuzie + binomial test)
-- **H3**: regresie OLS `|Δ%| ~ sentiment + trend + sentiment×trend`
-- **H4**: gap regression pe closed-periods (weekend FX, overnight NDX) cu sentiment agregat
+- `outputs/events.csv`: toate mesajele parsate;
+- `outputs/events_sentiment.csv`: evenimente gold cu sentiment LLM;
+- `outputs/event_study_windows.csv`: event x asset x window;
+- `outputs/h1_results.csv` ... `outputs/h14_results.csv`: rezultate per ipoteza;
+- `outputs/h4_periods.csv`: perioade inchise folosite pentru H4;
+- `outputs/methodology_summary.csv`: setarile metodologice efective;
+- `outputs/report.html`: raport vizual curent.
+- `outputs/manual_validation_sample.csv`: sample pentru validare umana.
 
-Output:
-- `outputs/event_study_windows.csv` — un rând per event × asset × fereastră
-- `outputs/h1_results.csv`, `h2_results.csv`, `h3_results.csv`, `h4_results.csv`
-- `outputs/figures/*.png`
+## Pentru paper
 
-Detecție automată closed periods (gap-uri > 5 min între bare consecutive în prețuri) — funcționează indiferent de DST, holidays, schedule changes.
+Nu formula concluziile ca “toate ipotezele au fost confirmate”. Varianta defensabila este:
+
+1. stiri neasteptate sunt asociate cu volatilitate intraday anormala;
+2. sentimentul LLM ofera un edge directional mic, nu un predictor puternic;
+3. pre-event drift-ul sugereaza fie latenta feed-ului, fie informatie deja incorporata de piata;
+4. rezultatele cele mai solide sunt magnitudinea, drift-ul pre-event si persistenta;
+5. rezultatele bazate pe volum, confidence si surprise-level trebuie raportate ca exploratorii.
