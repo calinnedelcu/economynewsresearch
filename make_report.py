@@ -151,6 +151,48 @@ def plot_h14(h14: pd.DataFrame):
     return fig
 
 
+def plot_range_outcomes(range_outcomes: pd.DataFrame):
+    if range_outcomes.empty:
+        return None
+    fig, ax = plt.subplots(figsize=(8.5, 4.2))
+    for asset in ASSETS:
+        sub = range_outcomes[
+            (range_outcomes["asset"] == asset)
+            & (range_outcomes["metric"] == "max_abs_move_pct")
+        ]
+        ax.plot(sub["window_min"], sub["ratio"], marker="o", linewidth=2, label=asset.upper())
+    ax.axhline(1, color="#777", linewidth=1, linestyle="--")
+    ax.set_xscale("log")
+    ax.set_xticks(WINDOWS_MIN)
+    ax.set_xticklabels([f"+{w}m" for w in WINDOWS_MIN])
+    ax.set_ylabel("Event / matched baseline ratio")
+    ax.set_title("Cluster-level max move vs matched baseline")
+    ax.grid(True, alpha=0.25)
+    ax.legend()
+    return fig
+
+
+def plot_pre_post(stability: pd.DataFrame):
+    if stability.empty:
+        return None
+    sub = stability[stability["window_min"] == 15].copy()
+    if sub.empty:
+        return None
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    labels, vals, colors = [], [], []
+    palette = {"pre_cutoff": "#2c6e91", "post_cutoff": "#226f54"}
+    for _, row in sub.iterrows():
+        labels.append(f"{row['asset'].upper()}\n{row['sample_period'].replace('_', ' ')}")
+        vals.append(row["mean_max_abs_move_z"])
+        colors.append(palette.get(row["sample_period"], "#8a8f98"))
+    ax.bar(labels, vals, color=colors)
+    ax.axhline(0, color="#333", linewidth=1)
+    ax.set_ylabel("Mean max_abs_move_z")
+    ax.set_title("Post-cutoff stability at +15m")
+    ax.grid(axis="y", alpha=0.2)
+    return fig
+
+
 def significance_note(df: pd.DataFrame, q_cols: list[str]) -> str:
     pieces = []
     for q_col in q_cols:
@@ -168,6 +210,15 @@ def build_html(data: dict[str, pd.DataFrame], output: Path):
     h5, h6, h7, h8 = data["h5"], data["h6"], data["h7"], data["h8"]
     h9, h10, h11 = data["h9"], data["h10"], data["h11"]
     h12, h13, h14 = data["h12"], data["h13"], data["h14"]
+    clusters = data["clusters"]
+    cluster_sentiment = data["cluster_sentiment"]
+    range_outcomes = data["range_outcomes"]
+    abnormal_z = data["abnormal_z"]
+    targeted = data["targeted_category"]
+    stability = data["pre_post_stability"]
+    multivariate = data["multivariate"]
+    robustness = data["outlier_robustness"]
+    consensus = data["model_consensus"]
 
     date_min = pd.to_datetime(events["timestamp_utc"], utc=True).min() if not events.empty else None
     date_max = pd.to_datetime(events["timestamp_utc"], utc=True).max() if not events.empty else None
@@ -217,10 +268,38 @@ code { background: #eef1f5; padding: 2px 5px; border-radius: 4px; }
     parts.append("<h2>High-Level Interpretation</h2>")
     parts.append("<ul>")
     parts.append("<li><strong>H1 remains robust:</strong> event windows show higher absolute returns than matched random windows across both assets and all horizons.</li>")
+    parts.append("<li><strong>Cluster-level movement is stronger:</strong> range and max-move outcomes reduce headline duplication and show larger, cleaner event effects.</li>")
     parts.append("<li><strong>H2 is modest/mixed:</strong> directional sentiment has only a small edge after cluster deduplication and the USD/EURUSD sign correction.</li>")
+    parts.append("<li><strong>Post-cutoff tests remain positive:</strong> abnormal movement persists after 2026-01-15, which helps against simple memorization objections.</li>")
     parts.append("<li><strong>H8 should be framed carefully:</strong> pre-event drift is above baseline, but this can reflect news-feed latency, not necessarily front-running.</li>")
     parts.append("<li><strong>H10 is proxy evidence:</strong> Dukascopy volume is not consolidated exchange or interbank volume, so it belongs in limitations.</li>")
     parts.append("</ul>")
+
+    parts.append("<h2>Paper-Strength Extensions</h2>")
+    parts.append("<div class='ok'>New outputs aggregate clustered headlines, add standardized abnormal returns, test range/max-move outcomes, split pre/post cutoff, and run multivariate controls.</div>")
+    if not clusters.empty:
+        parts.append(f"<p><strong>Cluster-window rows:</strong> {len(clusters):,}. "
+                     f"<strong>Unique clusters:</strong> {clusters['event_cluster_id'].nunique():,}.</p>")
+    range_fig = plot_range_outcomes(range_outcomes)
+    if range_fig is not None:
+        parts.append(img_tag(range_fig, "Range outcomes"))
+    prepost_fig = plot_pre_post(stability)
+    if prepost_fig is not None:
+        parts.append(img_tag(prepost_fig, "Pre/post cutoff stability"))
+
+    extension_sections = [
+        ("C1 - Cluster Sentiment Direction", cluster_sentiment, {"hit_rate": "{:.1%}", "p_binom_greater": "{:.3g}", "q_binom_greater": "{:.3g}"}),
+        ("C2 - Range and Max-Move Outcomes", range_outcomes, {"ratio": "{:.2f}", "p_mwu_greater": "{:.3g}", "q_mwu_greater": "{:.3g}"}),
+        ("C3 - Abnormal Z-Scores", abnormal_z, {"mean_z": "{:+.3f}", "median_z": "{:+.3f}", "p_wilcoxon_gt0": "{:.3g}", "q_wilcoxon_gt0": "{:.3g}"}),
+        ("C4 - Targeted Category Hypotheses", targeted.sort_values("q_max_abs_move_z_wilcoxon_gt0") if "q_max_abs_move_z_wilcoxon_gt0" in targeted else targeted, {"direction_hit_rate": "{:.1%}", "mean_max_abs_move_z": "{:+.3f}", "p_direction_binom_greater": "{:.3g}", "q_direction_binom_greater": "{:.3g}", "q_max_abs_move_z_wilcoxon_gt0": "{:.3g}"}),
+        ("C5 - Pre/Post Cutoff Stability", stability, {"mean_abs_return_z": "{:+.3f}", "mean_max_abs_move_z": "{:+.3f}", "direction_hit_rate": "{:.1%}", "q_max_abs_move_z_wilcoxon_gt0": "{:.3g}"}),
+        ("C6 - Multivariate Controls", best_by_q(multivariate, "q_value", n=25), {"coef": "{:+.4f}", "se": "{:.4f}", "p_value": "{:.3g}", "q_value": "{:.3g}", "r2": "{:.3f}"}),
+        ("C7 - 1% Winsorized Robustness", robustness, {"mean_raw": "{:+.3f}", "mean_winsor_1pct": "{:+.3f}", "q_winsor_wilcoxon_gt0": "{:.3g}"}),
+        ("C8 - Flash/Pro Consensus", consensus, {"hit_rate": "{:.1%}", "p_binom_greater": "{:.3g}", "q_binom_greater": "{:.3g}"}),
+    ]
+    for title, df, fmt in extension_sections:
+        parts.append(f"<h3>{title}</h3>")
+        parts.append(render_table(df, max_rows=25, fmt=fmt))
 
     sections = [
         ("H1 - Events vs Matched Baseline", h1, plot_h1(h1), {"ratio": "{:.2f}", "p_mwu_greater": "{:.3g}", "q_mwu_greater": "{:.3g}"}),
@@ -266,7 +345,11 @@ code { background: #eef1f5; padding: 2px 5px; border-radius: 4px; }
         parts.append(render_table(joined, max_rows=12, fmt={"delta_pct": "{:+.4f}", "abs_delta_pct": "{:.4f}"}))
 
     parts.append("<h2>Files</h2>")
-    files = sorted(p.name for p in Path("outputs").glob("h*_results.csv")) + ["event_study_windows.csv", "methodology_summary.csv"]
+    files = (
+        sorted(p.name for p in Path("outputs").glob("h*_results.csv"))
+        + sorted(p.name for p in Path("outputs").glob("*_results.csv") if not p.name.startswith("h"))
+        + ["event_study_windows.csv", "cluster_event_study_windows.csv", "methodology_summary.csv"]
+    )
     parts.append("<ul>" + "".join(f"<li><code>outputs/{name}</code></li>" for name in files) + "</ul>")
     parts.append("</body></html>")
 
@@ -290,7 +373,16 @@ def main():
     data = {
         "events": read_csv(Path(args.events), parse_dates=["timestamp_utc"]),
         "returns": read_csv(results_dir / "event_study_windows.csv", parse_dates=["timestamp_utc"]),
+        "clusters": read_csv(results_dir / "cluster_event_study_windows.csv", parse_dates=["timestamp_utc"]),
         "methodology": read_csv(results_dir / "methodology_summary.csv"),
+        "cluster_sentiment": read_csv(results_dir / "cluster_sentiment_results.csv"),
+        "range_outcomes": read_csv(results_dir / "range_outcomes_results.csv"),
+        "abnormal_z": read_csv(results_dir / "abnormal_z_results.csv"),
+        "targeted_category": read_csv(results_dir / "targeted_category_results.csv"),
+        "pre_post_stability": read_csv(results_dir / "pre_post_stability_results.csv"),
+        "multivariate": read_csv(results_dir / "multivariate_results.csv"),
+        "outlier_robustness": read_csv(results_dir / "outlier_robustness_results.csv"),
+        "model_consensus": read_csv(results_dir / "model_consensus_results.csv"),
     }
     for i in range(1, 15):
         data[f"h{i}"] = read_csv(results_dir / f"h{i}_results.csv")

@@ -44,6 +44,7 @@ def main():
             "events.csv",
             "events_sentiment.csv",
             "event_study_windows.csv",
+            "cluster_event_study_windows.csv",
             "methodology_summary.csv",
             "h1_results.csv",
             "h2_results.csv",
@@ -53,6 +54,14 @@ def main():
             "h8_results.csv",
             "h10_results.csv",
             "h14_results.csv",
+            "cluster_sentiment_results.csv",
+            "range_outcomes_results.csv",
+            "abnormal_z_results.csv",
+            "targeted_category_results.csv",
+            "pre_post_stability_results.csv",
+            "multivariate_results.csv",
+            "outlier_robustness_results.csv",
+            "model_consensus_results.csv",
         ]
         for name in required:
             require_file(OUT / name)
@@ -61,6 +70,15 @@ def main():
         settings = dict(zip(methodology["setting"], methodology["value"]))
         if settings.get("eurusd_sentiment_convention") != "sentiment_usd evaluated against USD proxy = -EUR/USD return":
             raise AssertionError("EUR/USD sentiment convention not recorded as USD proxy")
+        for setting in [
+            "cluster_level_outputs",
+            "abnormal_return_standardization",
+            "range_outcomes",
+            "pre_post_cutoff_utc",
+            "multivariate_controls",
+        ]:
+            if setting not in settings:
+                raise AssertionError(f"methodology summary missing {setting}")
         dropped = int(settings.get("events_after_common_range_dropped", "0"))
         if dropped:
             warn(f"{dropped} events were outside common price coverage and were dropped")
@@ -76,6 +94,13 @@ def main():
                 "base_ts",
                 "target_ts",
                 "volume_ratio",
+                "range_pct",
+                "max_abs_move_pct",
+                "target_max_abs_move_pct",
+                "abnormal_return_pct",
+                "abs_return_z",
+                "range_z",
+                "max_abs_move_z",
             ],
             "event_study_windows.csv",
         )
@@ -86,6 +111,29 @@ def main():
             raise AssertionError("event clustering did not reduce event count")
         if windows["volume_ratio"].notna().sum() == 0:
             raise AssertionError("volume_ratio is entirely missing")
+        if windows["max_abs_move_z"].notna().sum() == 0:
+            raise AssertionError("standardized max_abs_move_z is entirely missing")
+
+        clusters = pd.read_csv(OUT / "cluster_event_study_windows.csv", parse_dates=["timestamp_utc"])
+        require_columns(
+            clusters,
+            [
+                "event_cluster_id",
+                "asset",
+                "window_min",
+                "n_headlines",
+                "dominant_category",
+                "cluster_target_sentiment",
+                "cluster_abs_target_strength",
+                "max_abs_move_z",
+            ],
+            "cluster_event_study_windows.csv",
+        )
+        if len(clusters) >= len(windows):
+            raise AssertionError("cluster-level output did not reduce the event-window table")
+        duplicated_cluster_windows = clusters.duplicated(["event_cluster_id", "asset", "window_min"]).sum()
+        if duplicated_cluster_windows:
+            raise AssertionError(f"cluster output has duplicate cluster/asset/window rows: {duplicated_cluster_windows}")
 
         h1 = pd.read_csv(OUT / "h1_results.csv")
         require_columns(h1, ["n_events_raw", "n_events_used", "q_mwu_greater"], "h1_results.csv")
@@ -125,6 +173,56 @@ def main():
             ["pearson_eurusd_ndx", "pearson_usdproxy_ndx", "sign_match_usdproxy_ndx"],
             "h14_results.csv",
         )
+
+        cluster_sentiment = pd.read_csv(OUT / "cluster_sentiment_results.csv")
+        require_columns(cluster_sentiment, ["hit_rate", "q_binom_greater"], "cluster_sentiment_results.csv")
+
+        range_outcomes = pd.read_csv(OUT / "range_outcomes_results.csv")
+        require_columns(
+            range_outcomes,
+            ["metric", "ratio", "q_mwu_greater"],
+            "range_outcomes_results.csv",
+        )
+        if pd.to_numeric(range_outcomes["ratio"], errors="coerce").isna().any():
+            raise AssertionError("range/max move outcomes contain missing ratios")
+        if (pd.to_numeric(range_outcomes["ratio"], errors="coerce") <= 1).any():
+            warn("some range/max move outcomes are not above matched baseline")
+
+        abnormal_z = pd.read_csv(OUT / "abnormal_z_results.csv")
+        require_columns(abnormal_z, ["metric", "mean_z", "q_wilcoxon_gt0"], "abnormal_z_results.csv")
+        if not {"abs_return_z", "range_z", "max_abs_move_z"}.issubset(set(abnormal_z["metric"])):
+            raise AssertionError("abnormal_z_results.csv missing core z-score metrics")
+
+        targeted = pd.read_csv(OUT / "targeted_category_results.csv")
+        require_columns(
+            targeted,
+            ["hypothesis", "category", "mean_max_abs_move_z", "q_max_abs_move_z_wilcoxon_gt0"],
+            "targeted_category_results.csv",
+        )
+
+        stability = pd.read_csv(OUT / "pre_post_stability_results.csv")
+        require_columns(
+            stability,
+            ["sample_period", "mean_max_abs_move_z", "q_max_abs_move_z_wilcoxon_gt0"],
+            "pre_post_stability_results.csv",
+        )
+        if set(stability["sample_period"]) != {"pre_cutoff", "post_cutoff"}:
+            raise AssertionError("pre/post stability output does not contain both sample periods")
+
+        multivariate = pd.read_csv(OUT / "multivariate_results.csv")
+        require_columns(multivariate, ["outcome", "term", "coef", "se", "p_value", "q_value"], "multivariate_results.csv")
+        if not multivariate["cov_type"].eq("HC3").all():
+            raise AssertionError("multivariate controls are not using HC3 robust covariance")
+
+        robustness = pd.read_csv(OUT / "outlier_robustness_results.csv")
+        require_columns(
+            robustness,
+            ["metric", "mean_raw", "mean_winsor_1pct", "q_winsor_wilcoxon_gt0"],
+            "outlier_robustness_results.csv",
+        )
+
+        consensus = pd.read_csv(OUT / "model_consensus_results.csv")
+        require_columns(consensus, ["hit_rate", "q_binom_greater"], "model_consensus_results.csv")
 
     except Exception as exc:
         return fail(str(exc))

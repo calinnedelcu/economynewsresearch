@@ -1,6 +1,6 @@
 # Status proiect
 
-Ultima actualizare: 2026-05-06, dupa reparatii metodologice.
+Ultima actualizare: 2026-05-06, dupa extensii cluster/z-score/robustete.
 
 ## Stadiu curent
 
@@ -17,6 +17,9 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
   - baseline matched pe ora UTC si ziua saptamanii;
   - erori robuste/clusterizate pentru OLS;
   - q-values FDR Benjamini-Hochberg;
+  - `range_pct`, `max_abs_move_pct`, `abnormal_return_pct` si z-score-uri matched-baseline;
+  - output cluster-level explicit in `cluster_event_study_windows.csv`;
+  - teste cluster sentiment, range/max-move, abnormal z, pre/post cutoff, target categories, multivariate controls, winsorization si Flash/Pro consensus;
   - H4 summary separat de perioade (`h4_results.csv` si `h4_periods.csv`);
   - H8 fara `mean_post_abs = NaN`;
   - H10 cu caveat explicit pentru volum proxy.
@@ -35,6 +38,8 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
 - Evenimente folosite in event-study dupa filtrarea intervalului comun: 2,449.
 - Evenimente eliminate in afara intervalului de preturi: 0.
 - Clustere de evenimente, gap 15 minute: 1,405.
+- Randuri event-window: 24,490.
+- Randuri cluster-window: 14,050.
 - Preturi:
   - EUR/USD: 416,500 bare 1-min, `2025-03-24` -> `2026-05-05`.
   - NDX CFD: 381,122 bare 1-min, `2025-03-24` -> `2026-05-05`.
@@ -57,6 +62,19 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
 | H12 | slab | Asimetrie bear/bull mica. |
 | H13 | slab/partial | Surprise-level ajuta mai ales NDX pe termen foarte scurt. |
 | H14 | robust dar conventional | Semnul depinde de EUR/USD vs USD proxy. |
+
+## Verdict extensii noi
+
+| Output | Verdict | Nota pentru paper |
+|---|---|---|
+| Cluster sentiment | partial | NDX +5m/+15m devine mai interesant la nivel de cluster; EUR/USD ramane modest. |
+| Range/max move | foarte robust | Cel mai bun rezultat nou: miscarea maxima si range-ul sunt peste baseline in toate ferestrele. |
+| Abnormal z-score | robust | Standardizarea face comparabile EUR/USD si NDX si intareste H1 pe magnitudine. |
+| Targeted categories | util | Permite fraze mai puternice pe categorii, mai ales pe magnitudine, nu neaparat directie. |
+| Pre/post cutoff | robust | Efectul ramane dupa `2026-01-15`, deci argumentul de memorization este mai slab. |
+| Multivariate controls | defensabil | Include categorie, surprise, magnitude, confidence, cluster size, headline length si pre-event move. |
+| Outlier robustness | robust | Winsorizarea 1% pastreaza semnalul principal. |
+| Flash/Pro consensus | exploratoriu | Sample-ul de 200 arata ferestre promitatoare, dar nu trebuie vandut ca rezultat central. |
 
 ## Comenzi de reproducere
 

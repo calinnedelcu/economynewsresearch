@@ -17,7 +17,7 @@ Include explicit:
 - active: EUR/USD si Nasdaq-100 CFD;
 - metoda: event-study intraday + sentiment LLM;
 - corectia importanta: `sentiment_usd` testat contra proxy USD `-EUR/USD`;
-- rezultat central: miscari absolute peste baseline;
+- rezultat central: miscari anormale de magnitudine/range/max-move peste baseline;
 - rezultat secundar: edge directional modest, nu predictor puternic.
 
 ## 1. Introduction
@@ -90,6 +90,14 @@ Pentru fiecare event `i`, asset `a` si fereastra `w`:
 price_return_i,a,w = (close_end - open_start) / open_start * 100
 ```
 
+Outcome-uri suplimentare, mai robuste pentru paper:
+
+```text
+range_i,a,w = (max(high_window) - min(low_window)) / open_start * 100
+max_abs_move_i,a,w = max(abs(max_up), abs(max_down))
+abnormal_z_i,a,w = (outcome_i,a,w - matched_baseline_mean_a,w,h,d) / matched_baseline_sd_a,w,h,d
+```
+
 Pentru NDX:
 
 ```text
@@ -107,6 +115,14 @@ Aceasta conventie este esentiala pentru H2/H3/H4/H14.
 ### 4.3 Event Clustering
 
 Stirile apropiate temporal nu sunt independente. Evenimentele sunt grupate in clustere daca distanta dintre ele este de cel mult 15 minute. Testele non-regresie folosesc primul eveniment per cluster; regresiile folosesc erori clusterizate.
+
+Extensia noua construieste si un tabel cluster-level separat:
+
+```text
+cluster_event_study_windows.csv = event_cluster_id x asset x window
+```
+
+Pentru fiecare cluster se agrega sentimentul, surprise, expected magnitude, categoria dominanta, numarul de headline-uri si lungimea medie a headline-ului.
 
 ### 4.4 Matched Baseline
 
@@ -134,6 +150,17 @@ Ipotezele trebuie raportate conservator:
 - H12: bear vs bull asymmetry.
 - H14: raportat atat EUR/USD vs NDX, cat si USD proxy vs NDX.
 
+Extensii C1-C8:
+
+- C1: cluster-level target sentiment vs realized target direction.
+- C2: range si max-absolute-move vs matched baseline.
+- C3: abnormal z-scores pentru return, abs return, range si max move.
+- C4: ipoteze targetate pe categorii (`central_bank`, `geopolitical`, `politics`, `energy`, `corporate`).
+- C5: stabilitate pre/post `2026-01-15`.
+- C6: regresii multivariate cu controale pentru categorie, surprise, magnitude, confidence, cluster size, headline length si pre-event move.
+- C7: robustete la outlieri prin winsorizare 1%.
+- C8: subset Flash/Pro consensus pe `compare_models.csv`.
+
 ### 4.6 Multiple Testing
 
 Toate p-value-urile din tabelele `h*_results.csv` primesc q-value Benjamini-Hochberg FDR. In paper, concluziile principale trebuie trase pe q-values, nu doar pe p-values.
@@ -142,11 +169,13 @@ Toate p-value-urile din tabelele `h*_results.csv` primesc q-value Benjamini-Hoch
 
 Structura recomandata:
 
-1. H1 ca rezultat central.
-2. H2/H3 ca teste despre utilitatea sentimentului.
-3. H8/H9 ca discutie despre timing si persistenta.
-4. H4/H14 ca market-structure / cross-asset.
-5. H5-H7/H10-H13 ca analize exploratorii.
+1. Range/max-move si H1 ca rezultat central despre volatilitate/magnitudine anormala.
+2. Pre/post cutoff si outlier robustness ca aparare de robustete.
+3. H2/H3/C1/C8 ca teste despre utilitatea sentimentului.
+4. C4/C6 ca teste targetate si controale multivariate.
+5. H8/H9 ca discutie despre timing si persistenta.
+6. H4/H14 ca market-structure / cross-asset.
+7. H5-H7/H10-H13 ca analize exploratorii.
 
 Evita formularea “all hypotheses were confirmed”. Foloseste verdict:
 
@@ -161,6 +190,8 @@ Evita formularea “all hypotheses were confirmed”. Foloseste verdict:
 Puncte de discutat:
 
 - De ce H1 este mai puternic decat H2: stirile cresc volatilitatea mai clar decat prezic directia.
+- De ce range/max-move este un outcome mai stabil decat directia close-to-close.
+- De ce split-ul post-cutoff ajuta la discutia despre memorization, dar nu inlocuieste validarea manuala.
 - De ce pre-event drift nu inseamna automat insider trading sau front-running.
 - De ce confidence-ul LLM nu este calibrat.
 - De ce volumul Dukascopy este proxy.

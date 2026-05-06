@@ -15,7 +15,13 @@ Corectii metodologice aplicate:
 - evenimentele din afara intervalului comun de preturi sunt eliminate automat;
 - `sentiment_usd` este evaluat contra unui proxy USD corect: `-EUR/USD`, nu direct contra EUR/USD;
 - stirile apropiate sunt grupate in clustere de 15 minute, iar testele non-regresie folosesc primul eveniment per cluster;
+- exista si output cluster-level explicit: un rand per `event_cluster_id` x asset x window;
 - baseline-ul random este matched pe ora UTC si ziua saptamanii, cu buffer de excludere in jurul evenimentelor;
+- fiecare fereastra include acum `range_pct`, `max_abs_move_pct` si z-score-uri anormale fata de baseline;
+- exista teste pre/post `2026-01-15`, ca verificare impotriva obiectiei de memorization;
+- exista teste targetate pe categorie si regresii multivariate cu controale pentru categorie, surprise, cluster size si lungime headline;
+- exista robustete outlier prin winsorizare 1%;
+- subsetul Flash/Pro consensus este testat separat pe `outputs/compare_models.csv`;
 - regresiile folosesc erori robuste/clusterizate;
 - toate p-value-urile din output primesc q-value Benjamini-Hochberg FDR;
 - H10 include explicit caveat-ul ca volumul Dukascopy este proxy/tick volume.
@@ -51,6 +57,19 @@ OK: outputs passed methodology sanity checks
 | H13 | slab / partial | `surprise_level` ajuta mai ales pentru NDX pe ferestre scurte. |
 | H14 | robust, interpretare atenta | Corelatia EUR/USD vs NDX este negativa; USD proxy vs NDX este pozitiva prin conventie. |
 
+Extensii noi pentru paper:
+
+| Output | Verdict curent | Interpretare scurta |
+|---|---|---|
+| Cluster sentiment | partial | Agregarea pe cluster imbunatateste usor directia pe NDX +5m/+15m, dar nu transforma sentimentul intr-un predictor puternic. |
+| Range/max move | foarte robust | Range-ul si miscarea maxima sunt peste baseline in toate activele/ferestrele; acesta este cel mai puternic rezultat nou. |
+| Abnormal z-scores | robust | Miscarea anormala standardizata ramane pozitiva pe close-to-close, range si max move. |
+| Targeted categories | util pentru paper | Central bank, geopolitical, politics, energy si corporate pot fi raportate separat; multe semnale sunt mai clare pe magnitudine decat directie. |
+| Pre/post cutoff | robust | Efectul pe max move ramane pozitiv si dupa `2026-01-15`. |
+| Multivariate controls | important ca aparare | Semnalul de miscare ramane modelabil peste categorie/surprise/lungime; pre-event move si cluster size sunt controale importante. |
+| Outlier robustness | robust | Winsorizarea 1% nu elimina semnalul principal. |
+| Flash/Pro consensus | exploratoriu | Consensus-ul da ferestre directionale interesante, dar esantionul de 200 este prea mic pentru concluzie centrala. |
+
 Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
 
 - `outputs/report.html`
@@ -63,7 +82,7 @@ parse_fj_discord.py     # DiscordChatExporter JSON -> outputs/events.csv
 download_prices.py      # Dukascopy EUR/USD + E_NQ-100 1m -> outputs/prices_*.csv
 sentiment.py            # DeepSeek-compatible API -> outputs/events_sentiment.csv
 compare_models.py       # Flash vs Pro A/B agreement sample
-event_study.py          # event-study core, H1-H14, FDR q-values
+event_study.py          # event-study core, H1-H14, cluster tests, z-scores, FDR q-values
 make_report.py          # HTML report generated from current outputs
 validate_outputs.py     # sanity checks for methodology-sensitive outputs
 prepare_manual_validation.py  # 200-row sample for human annotation
@@ -119,7 +138,16 @@ DEEPSEEK_API_KEY=sk-...
 - `outputs/events.csv`: toate mesajele parsate;
 - `outputs/events_sentiment.csv`: evenimente gold cu sentiment LLM;
 - `outputs/event_study_windows.csv`: event x asset x window;
+- `outputs/cluster_event_study_windows.csv`: cluster x asset x window;
 - `outputs/h1_results.csv` ... `outputs/h14_results.csv`: rezultate per ipoteza;
+- `outputs/cluster_sentiment_results.csv`: directie pe sentiment agregat la nivel de cluster;
+- `outputs/range_outcomes_results.csv`: range si max-move vs baseline;
+- `outputs/abnormal_z_results.csv`: z-score-uri anormale standardizate;
+- `outputs/targeted_category_results.csv`: ipoteze targetate pe categorii;
+- `outputs/pre_post_stability_results.csv`: stabilitate inainte/dupa `2026-01-15`;
+- `outputs/multivariate_results.csv`: regresii multivariate cu controale;
+- `outputs/outlier_robustness_results.csv`: robustete la winsorizare 1%;
+- `outputs/model_consensus_results.csv`: subset Flash/Pro consensus;
 - `outputs/h4_periods.csv`: perioade inchise folosite pentru H4;
 - `outputs/methodology_summary.csv`: setarile metodologice efective;
 - `outputs/report.html`: raport vizual curent.
@@ -132,5 +160,5 @@ Nu formula concluziile ca “toate ipotezele au fost confirmate”. Varianta def
 1. stiri neasteptate sunt asociate cu volatilitate intraday anormala;
 2. sentimentul LLM ofera un edge directional mic, nu un predictor puternic;
 3. pre-event drift-ul sugereaza fie latenta feed-ului, fie informatie deja incorporata de piata;
-4. rezultatele cele mai solide sunt magnitudinea, drift-ul pre-event si persistenta;
-5. rezultatele bazate pe volum, confidence si surprise-level trebuie raportate ca exploratorii.
+4. rezultatele cele mai solide sunt max-move/range, magnitudinea anormala, drift-ul pre-event si persistenta;
+5. rezultatele bazate pe volum, confidence, surprise-level si consensus sample trebuie raportate ca exploratorii.

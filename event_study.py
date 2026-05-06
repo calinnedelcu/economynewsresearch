@@ -35,6 +35,9 @@ DEFAULT_EXCLUDE_BUFFER_MIN = 60
 DEFAULT_CLUSTER_GAP_MIN = 15
 GAP_THRESHOLD_MIN = 5
 SEED = 42
+KNOWLEDGE_CUTOFF_TS = pd.Timestamp("2026-01-15", tz="UTC")
+MAGNITUDE_SCORE = {"low": 0.0, "med": 1.0, "high": 2.0}
+SURPRISE_SCORE = {"expected": 0.0, "surprise": 1.0, "shock": 2.0}
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +107,13 @@ def orient_delta(asset: str, value):
     return value
 
 
+def orient_extreme_moves(asset: str, max_up_pct, max_down_pct):
+    """Return target-aligned intrawindow favorable/adverse extremes."""
+    if asset == "eurusd":
+        return -max_down_pct, -max_up_pct
+    return max_up_pct, max_down_pct
+
+
 def sentiment_col_for_asset(asset: str) -> str:
     return "sentiment_usd" if asset == "eurusd" else "sentiment_ndx"
 
@@ -148,7 +158,14 @@ def compute_event_window(event_ts, prices: pd.DataFrame, window_min: int):
 
     base = float(prices.loc[start_ts, "open"])
     target = float(prices.loc[end_ts, "close"])
+    window = prices.loc[start_ts:end_ts]
+    high = float(window["high"].max())
+    low = float(window["low"].min())
     pct = (target - base) / base * 100
+    max_up_pct = (high - base) / base * 100
+    max_down_pct = (low - base) / base * 100
+    range_pct = (high - low) / base * 100
+    max_abs_move_pct = max(abs(max_up_pct), abs(max_down_pct))
     vol_window = float(prices.loc[start_ts:end_ts, "volume"].sum())
     return {
         "base_ts": start_ts,
@@ -156,6 +173,11 @@ def compute_event_window(event_ts, prices: pd.DataFrame, window_min: int):
         "base": base,
         "target": target,
         "delta_pct": pct,
+        "abs_delta_pct": abs(pct),
+        "range_pct": range_pct,
+        "max_up_pct": max_up_pct,
+        "max_down_pct": max_down_pct,
+        "max_abs_move_pct": max_abs_move_pct,
         "volume": vol_window,
     }
 
@@ -212,26 +234,66 @@ def build_baseline_pool(
     """All valid non-event windows for one asset/window."""
     starts = prices.index
     ends = starts + pd.Timedelta(minutes=window_min - 1)
-    has_end = ends.isin(prices.index)
+    start_pos_all = np.arange(len(starts))
+    end_pos_all = prices.index.get_indexer(ends)
+    has_end = end_pos_all >= 0
+    is_contiguous = has_end & ((end_pos_all - start_pos_all) == (window_min - 1))
     excluded = build_excluded_starts(event_timestamps, window_min, exclude_buffer_min)
-    valid = has_end & ~starts.isin(excluded)
+    valid = is_contiguous & ~starts.isin(excluded)
 
     starts = starts[valid]
     ends = starts + pd.Timedelta(minutes=window_min - 1)
     if len(starts) == 0:
-        return pd.DataFrame(columns=["start_ts", "end_ts", "delta_pct", "hour_utc", "dow"])
+        return pd.DataFrame(columns=[
+            "start_ts",
+            "end_ts",
+            "delta_pct",
+            "abs_delta_pct",
+            "range_pct",
+            "max_up_pct",
+            "max_down_pct",
+            "max_abs_move_pct",
+            "volume",
+            "hour_utc",
+            "dow",
+        ])
 
     base = prices.loc[starts, "open"].to_numpy(dtype=float)
     target = prices.loc[ends, "close"].to_numpy(dtype=float)
     start_pos = prices.index.get_indexer(starts)
     end_pos = prices.index.get_indexer(ends)
+    high_roll = (
+        prices["high"]
+        .rolling(window_min, min_periods=window_min)
+        .max()
+        .shift(-(window_min - 1))
+        .to_numpy(dtype=float)
+    )
+    low_roll = (
+        prices["low"]
+        .rolling(window_min, min_periods=window_min)
+        .min()
+        .shift(-(window_min - 1))
+        .to_numpy(dtype=float)
+    )
+    high = high_roll[start_pos]
+    low = low_roll[start_pos]
     cum_volume = np.r_[0.0, prices["volume"].to_numpy(dtype=float).cumsum()]
     volume = cum_volume[end_pos + 1] - cum_volume[start_pos]
     delta_pct = (target - base) / base * 100
+    max_up_pct = (high - base) / base * 100
+    max_down_pct = (low - base) / base * 100
+    range_pct = (high - low) / base * 100
+    max_abs_move_pct = np.maximum(np.abs(max_up_pct), np.abs(max_down_pct))
     return pd.DataFrame({
         "start_ts": starts,
         "end_ts": ends,
         "delta_pct": delta_pct,
+        "abs_delta_pct": np.abs(delta_pct),
+        "range_pct": range_pct,
+        "max_up_pct": max_up_pct,
+        "max_down_pct": max_down_pct,
+        "max_abs_move_pct": max_abs_move_pct,
         "volume": volume,
         "hour_utc": starts.hour,
         "dow": starts.dayofweek,
@@ -244,20 +306,23 @@ def sample_matched_baseline(
     window_min: int,
     rng: np.random.Generator,
     n_per_event: int,
+    metric: str = "delta_pct",
 ) -> np.ndarray:
     """Sample baseline returns matched by same hour and day-of-week when possible."""
-    if pool.empty or len(reference_timestamps) == 0:
+    if pool.empty or len(reference_timestamps) == 0 or metric not in pool.columns:
         return np.array([])
 
     by_hour_dow = {
-        key: group["delta_pct"].to_numpy(dtype=float)
+        key: group[metric].dropna().to_numpy(dtype=float)
         for key, group in pool.groupby(["hour_utc", "dow"])
     }
     by_hour = {
-        key: group["delta_pct"].to_numpy(dtype=float)
+        key: group[metric].dropna().to_numpy(dtype=float)
         for key, group in pool.groupby("hour_utc")
     }
-    all_values = pool["delta_pct"].to_numpy(dtype=float)
+    all_values = pool[metric].dropna().to_numpy(dtype=float)
+    if len(all_values) == 0:
+        return np.array([])
 
     sampled = []
     for ts in reference_timestamps:
@@ -317,6 +382,95 @@ def attach_volume_ratios(returns_df: pd.DataFrame, baseline_pools: dict[tuple[st
     return returns_df
 
 
+def matched_baseline_moments(pool: pd.DataFrame, metric: str, reference_times: pd.Series):
+    """Return mean/std arrays matched by same hour and day-of-week when possible."""
+    if pool.empty or metric not in pool.columns:
+        n = len(reference_times)
+        return np.full(n, np.nan), np.full(n, np.nan)
+
+    vals = pd.to_numeric(pool[metric], errors="coerce")
+    valid_pool = pool.loc[vals.notna(), ["hour_utc", "dow"]].copy()
+    valid_pool[metric] = vals[vals.notna()].to_numpy(dtype=float)
+    if valid_pool.empty:
+        n = len(reference_times)
+        return np.full(n, np.nan), np.full(n, np.nan)
+
+    by_hour_dow = valid_pool.groupby(["hour_utc", "dow"])[metric].agg(["mean", "std"])
+    by_hour = valid_pool.groupby("hour_utc")[metric].agg(["mean", "std"])
+    all_mean = float(valid_pool[metric].mean())
+    all_std = float(valid_pool[metric].std(ddof=1))
+    if not np.isfinite(all_std) or all_std <= 0:
+        all_std = np.nan
+
+    reference_times = pd.to_datetime(reference_times, utc=True)
+    means, stds = [], []
+    for ts in reference_times:
+        if pd.isna(ts):
+            means.append(np.nan)
+            stds.append(np.nan)
+            continue
+        h, d = ts.hour, ts.dayofweek
+        mean = std = np.nan
+        if (h, d) in by_hour_dow.index:
+            mean = by_hour_dow.loc[(h, d), "mean"]
+            std = by_hour_dow.loc[(h, d), "std"]
+        if (not np.isfinite(std) or std <= 0) and h in by_hour.index:
+            mean = by_hour.loc[h, "mean"]
+            std = by_hour.loc[h, "std"]
+        if not np.isfinite(mean):
+            mean = all_mean
+        if not np.isfinite(std) or std <= 0:
+            std = all_std
+        means.append(mean)
+        stds.append(std)
+    return np.asarray(means, dtype=float), np.asarray(stds, dtype=float)
+
+
+def attach_abnormal_scores(returns_df: pd.DataFrame, baseline_pools: dict[tuple[str, int], pd.DataFrame]):
+    """Attach matched-baseline abnormal returns and standardized movement scores."""
+    returns_df = returns_df.copy()
+    returns_df["abs_delta_pct"] = pd.to_numeric(returns_df["delta_pct"], errors="coerce").abs()
+    metrics = {
+        "delta_pct": "return_z",
+        "abs_delta_pct": "abs_return_z",
+        "range_pct": "range_z",
+        "max_abs_move_pct": "max_abs_move_z",
+    }
+    for metric, z_col in metrics.items():
+        returns_df[f"baseline_{metric}_mean"] = np.nan
+        returns_df[f"baseline_{metric}_std"] = np.nan
+        returns_df[z_col] = np.nan
+    returns_df["abnormal_return_pct"] = np.nan
+
+    for asset in ASSETS:
+        for w in WINDOWS_MIN:
+            mask = (
+                (returns_df["asset"] == asset)
+                & (returns_df["window_min"] == w)
+                & returns_df["base_ts"].notna()
+            )
+            if not mask.any():
+                continue
+            pool = baseline_pools.get((asset, w), pd.DataFrame())
+            base_ts = returns_df.loc[mask, "base_ts"]
+            idx = returns_df.index[mask]
+            for metric, z_col in metrics.items():
+                if metric not in returns_df.columns:
+                    continue
+                means, stds = matched_baseline_moments(pool, metric, base_ts)
+                observed = pd.to_numeric(returns_df.loc[idx, metric], errors="coerce").to_numpy(dtype=float)
+                z = (observed - means) / stds
+                z[~np.isfinite(z)] = np.nan
+                returns_df.loc[idx, f"baseline_{metric}_mean"] = means
+                returns_df.loc[idx, f"baseline_{metric}_std"] = stds
+                returns_df.loc[idx, z_col] = z
+                if metric == "delta_pct":
+                    abnormal = observed - means
+                    abnormal[~np.isfinite(abnormal)] = np.nan
+                    returns_df.loc[idx, "abnormal_return_pct"] = abnormal
+    return returns_df
+
+
 # ---------------------------------------------------------------------------
 # Event-window generation
 # ---------------------------------------------------------------------------
@@ -362,7 +516,15 @@ def compute_returns_for_events(events, prices, closed_periods_by_asset):
                         "base": np.nan,
                         "target": np.nan,
                         "delta_pct": np.nan,
+                        "abs_delta_pct": np.nan,
                         "target_delta_pct": np.nan,
+                        "range_pct": np.nan,
+                        "max_up_pct": np.nan,
+                        "max_down_pct": np.nan,
+                        "max_abs_move_pct": np.nan,
+                        "target_max_up_pct": np.nan,
+                        "target_max_down_pct": np.nan,
+                        "target_max_abs_move_pct": np.nan,
                         "volume": np.nan,
                         "volume_ratio": np.nan,
                         "pre_delta_pct_15": np.nan,
@@ -379,13 +541,29 @@ def compute_returns_for_events(events, prices, closed_periods_by_asset):
                             "base": np.nan,
                             "target": np.nan,
                             "delta_pct": np.nan,
+                            "abs_delta_pct": np.nan,
                             "target_delta_pct": np.nan,
+                            "range_pct": np.nan,
+                            "max_up_pct": np.nan,
+                            "max_down_pct": np.nan,
+                            "max_abs_move_pct": np.nan,
+                            "target_max_up_pct": np.nan,
+                            "target_max_down_pct": np.nan,
+                            "target_max_abs_move_pct": np.nan,
                             "volume": np.nan,
                             "volume_ratio": np.nan,
                         })
                     else:
                         row.update(res)
                         row["target_delta_pct"] = orient_delta(asset, res["delta_pct"])
+                        target_max_up, target_max_down = orient_extreme_moves(
+                            asset,
+                            res["max_up_pct"],
+                            res["max_down_pct"],
+                        )
+                        row["target_max_up_pct"] = target_max_up
+                        row["target_max_down_pct"] = target_max_down
+                        row["target_max_abs_move_pct"] = res["max_abs_move_pct"]
                         row["volume_ratio"] = np.nan
                     for pw in PRE_WINDOWS_MIN:
                         pre = compute_event_window(ts, prices[asset], -pw)
@@ -1158,6 +1336,537 @@ def test_h14_spillover(returns_df, cluster_dedupe=True):
 
 
 # ---------------------------------------------------------------------------
+# Paper-strength extensions: cluster aggregation and robustness tests
+# ---------------------------------------------------------------------------
+
+
+def mode_nonempty(series: pd.Series):
+    vals = series.dropna().astype(str)
+    vals = vals[vals != ""]
+    if vals.empty:
+        return ""
+    return vals.value_counts().index[0]
+
+
+def score_label(score, labels: dict[float, str]):
+    if pd.isna(score):
+        return ""
+    rounded = float(round(score))
+    return labels.get(rounded, "")
+
+
+def weighted_average(values: pd.Series, weights: pd.Series):
+    values = pd.to_numeric(values, errors="coerce")
+    weights = pd.to_numeric(weights, errors="coerce").fillna(0)
+    mask = values.notna() & weights.notna() & (weights > 0)
+    if mask.any():
+        return float(np.average(values[mask], weights=weights[mask]))
+    if values.notna().any():
+        return float(values.mean())
+    return np.nan
+
+
+def build_cluster_windows(events: pd.DataFrame, returns_df: pd.DataFrame) -> pd.DataFrame:
+    """Collapse bursty headlines into one outcome per event cluster/asset/window."""
+    if returns_df.empty or "event_cluster_id" not in returns_df.columns:
+        return pd.DataFrame()
+
+    ev = events.copy()
+    ev["headline_length"] = ev["content"].astype(str).str.len() if "content" in ev.columns else 0
+    ev["confidence"] = pd.to_numeric(ev["confidence"], errors="coerce") if "confidence" in ev.columns else np.nan
+    ev["_magnitude_score"] = ev["expected_magnitude"].map(MAGNITUDE_SCORE)
+    ev["_surprise_score"] = ev["surprise_level"].map(SURPRISE_SCORE)
+
+    cluster_base = ev.groupby("event_cluster_id").agg(
+        cluster_start_ts=("timestamp_utc", "min"),
+        cluster_end_ts=("timestamp_utc", "max"),
+        n_headlines=("id", "size"),
+        headline_length_mean=("headline_length", "mean"),
+        cluster_confidence_mean=("confidence", "mean"),
+        cluster_magnitude_score_max=("_magnitude_score", "max"),
+        cluster_magnitude_score_mean=("_magnitude_score", "mean"),
+        cluster_surprise_score_max=("_surprise_score", "max"),
+        cluster_surprise_score_mean=("_surprise_score", "mean"),
+    ).reset_index()
+    category = ev.groupby("event_cluster_id")["category"].apply(mode_nonempty).reset_index(name="dominant_category")
+    cluster_base = cluster_base.merge(category, on="event_cluster_id", how="left")
+    cluster_base["cluster_expected_magnitude"] = cluster_base["cluster_magnitude_score_max"].apply(
+        lambda s: score_label(s, {0.0: "low", 1.0: "med", 2.0: "high"})
+    )
+    cluster_base["cluster_surprise_level"] = cluster_base["cluster_surprise_score_max"].apply(
+        lambda s: score_label(s, {0.0: "expected", 1.0: "surprise", 2.0: "shock"})
+    )
+
+    asset_rows = []
+    for asset in ASSETS:
+        sentiment_col = sentiment_col_for_asset(asset)
+        strength_col = strength_col_for_asset(asset)
+        sentiment_num = ev[sentiment_col].map({"bull": 1.0, "neutral": 0.0, "bear": -1.0})
+        strength = pd.to_numeric(ev[strength_col], errors="coerce")
+        confidence = pd.to_numeric(ev["confidence"], errors="coerce")
+        tmp = ev[["event_cluster_id"]].copy()
+        tmp["_sentiment_num"] = sentiment_num
+        tmp["_strength"] = strength
+        tmp["_confidence"] = confidence
+        tmp["_sentiment_label"] = ev[sentiment_col].astype(str)
+
+        for cid, group in tmp.groupby("event_cluster_id"):
+            weighted_strength = weighted_average(group["_strength"], group["_confidence"])
+            weighted_sentiment = weighted_average(group["_sentiment_num"], group["_confidence"])
+            if pd.notna(weighted_strength) and abs(weighted_strength) > 0.05:
+                cluster_sentiment = "bull" if weighted_strength > 0 else "bear"
+            elif pd.notna(weighted_sentiment) and abs(weighted_sentiment) > 0.05:
+                cluster_sentiment = "bull" if weighted_sentiment > 0 else "bear"
+            else:
+                cluster_sentiment = "neutral"
+            label_counts = group["_sentiment_label"].replace("", np.nan).dropna().value_counts()
+            agreement = float(label_counts.iloc[0] / label_counts.sum()) if label_counts.sum() else np.nan
+            asset_rows.append({
+                "event_cluster_id": cid,
+                "asset": asset,
+                "cluster_target_sentiment": cluster_sentiment,
+                "cluster_target_sentiment_score": weighted_sentiment,
+                "cluster_target_strength_mean": float(group["_strength"].mean()) if group["_strength"].notna().any() else np.nan,
+                "cluster_target_strength_conf_weighted": weighted_strength,
+                "cluster_sentiment_agreement_share": agreement,
+            })
+
+    asset_cluster = pd.DataFrame(asset_rows)
+    cluster_features = cluster_base.merge(asset_cluster, on="event_cluster_id", how="left")
+
+    first_rows = (
+        returns_df.sort_values("timestamp_utc")
+        .drop_duplicates(["event_cluster_id", "asset", "window_min"], keep="first")
+        .copy()
+    )
+    cluster_df = first_rows.merge(cluster_features, on=["event_cluster_id", "asset"], how="left")
+    cluster_df["cluster_abs_target_strength"] = pd.to_numeric(
+        cluster_df["cluster_target_strength_conf_weighted"], errors="coerce"
+    ).abs()
+    return cluster_df
+
+
+def one_sample_greater(values, center=0.0):
+    arr = pd.to_numeric(pd.Series(values), errors="coerce").dropna().to_numpy(dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if len(arr) < 2:
+        return np.nan, np.nan, np.nan, np.nan
+    try:
+        t_stat, p_t = stats.ttest_1samp(arr, popmean=center, alternative="greater")
+    except TypeError:
+        t_stat, p_two = stats.ttest_1samp(arr, popmean=center)
+        p_t = p_two / 2 if t_stat > 0 else 1 - p_two / 2
+    try:
+        w_stat, p_w = stats.wilcoxon(arr - center, alternative="greater")
+    except ValueError:
+        w_stat, p_w = (np.nan, np.nan)
+    return float(t_stat), float(p_t), float(w_stat) if pd.notna(w_stat) else np.nan, float(p_w) if pd.notna(p_w) else np.nan
+
+
+def test_cluster_sentiment(cluster_df: pd.DataFrame):
+    print("\n=== C1: cluster-level target sentiment vs realized direction ===")
+    results = []
+    for asset in ASSETS:
+        for w in WINDOWS_MIN:
+            sub = cluster_df[
+                (cluster_df["asset"] == asset)
+                & (cluster_df["window_min"] == w)
+                & cluster_df["target_delta_pct"].notna()
+                & cluster_df["cluster_target_sentiment"].isin(["bull", "bear"])
+                & (cluster_df["target_delta_pct"] != 0)
+            ].copy()
+            if len(sub) < 10:
+                continue
+            realized = np.where(sub["target_delta_pct"] > 0, "bull", "bear")
+            correct = int((sub["cluster_target_sentiment"].to_numpy() == realized).sum())
+            p_binom = stats.binomtest(correct, len(sub), p=0.5, alternative="greater").pvalue
+            results.append({
+                "asset": asset,
+                "asset_target": target_label_for_asset(asset),
+                "window_min": w,
+                "n_clusters": len(sub),
+                "correct": correct,
+                "hit_rate": correct / len(sub),
+                "mean_abs_cluster_strength": float(sub["cluster_abs_target_strength"].mean()),
+                "p_binom_greater": float(p_binom),
+            })
+            print(f"  {asset:6s} +{w:3d}m: clusters={len(sub):4d} hit={correct/len(sub):.1%} p={p_binom:.4g}")
+    return pd.DataFrame(results)
+
+
+def test_range_outcomes(cluster_df: pd.DataFrame, baseline_pools, rng, baseline_per_event):
+    print("\n=== C2: range/max move outcomes vs matched baseline ===")
+    results = []
+    metric_labels = {
+        "range_pct": "high-low range",
+        "max_abs_move_pct": "max absolute intrawindow move",
+    }
+    for asset in ASSETS:
+        for w in WINDOWS_MIN:
+            sub = cluster_df[
+                (cluster_df["asset"] == asset)
+                & (cluster_df["window_min"] == w)
+                & cluster_df["base_ts"].notna()
+            ].copy()
+            if len(sub) < 20:
+                continue
+            pool = baseline_pools.get((asset, w), pd.DataFrame())
+            for metric, label in metric_labels.items():
+                if metric not in sub.columns or metric not in pool.columns:
+                    continue
+                event_vals = pd.to_numeric(sub[metric], errors="coerce").dropna().to_numpy(dtype=float)
+                baseline = sample_matched_baseline(
+                    pool,
+                    sub["timestamp_utc"].tolist(),
+                    w,
+                    rng,
+                    baseline_per_event,
+                    metric=metric,
+                )
+                if len(event_vals) < 20 or len(baseline) < 50:
+                    continue
+                t_stat, p_t = ttest_ind_greater(event_vals, baseline)
+                u_stat, p_u = stats.mannwhitneyu(event_vals, baseline, alternative="greater")
+                results.append({
+                    "asset": asset,
+                    "asset_target": target_label_for_asset(asset),
+                    "window_min": w,
+                    "metric": metric,
+                    "metric_label": label,
+                    "n_clusters": len(event_vals),
+                    "n_baseline": len(baseline),
+                    "mean_event": float(np.mean(event_vals)),
+                    "mean_baseline": float(np.mean(baseline)),
+                    "ratio": float(np.mean(event_vals) / np.mean(baseline)) if np.mean(baseline) > 0 else np.nan,
+                    "t_stat": float(t_stat),
+                    "p_ttest_greater": float(p_t),
+                    "u_stat": float(u_stat),
+                    "p_mwu_greater": float(p_u),
+                })
+                print(
+                    f"  {asset:6s} +{w:3d}m {metric}: "
+                    f"ratio={np.mean(event_vals)/np.mean(baseline):.2f}x p={p_u:.4g}"
+                )
+    return pd.DataFrame(results)
+
+
+def test_abnormal_z_outcomes(cluster_df: pd.DataFrame):
+    print("\n=== C3: standardized abnormal movement scores ===")
+    results = []
+    metric_labels = {
+        "return_z": "signed close-to-close return z-score",
+        "abs_return_z": "absolute close-to-close return z-score",
+        "range_z": "high-low range z-score",
+        "max_abs_move_z": "max absolute intrawindow move z-score",
+    }
+    for asset in ASSETS:
+        for w in WINDOWS_MIN:
+            sub = cluster_df[(cluster_df["asset"] == asset) & (cluster_df["window_min"] == w)].copy()
+            for metric, label in metric_labels.items():
+                vals = pd.to_numeric(sub[metric], errors="coerce").dropna()
+                if len(vals) < 20:
+                    continue
+                t_stat, p_t, w_stat, p_w = one_sample_greater(vals, center=0.0)
+                results.append({
+                    "asset": asset,
+                    "asset_target": target_label_for_asset(asset),
+                    "window_min": w,
+                    "metric": metric,
+                    "metric_label": label,
+                    "n_clusters": len(vals),
+                    "mean_z": float(vals.mean()),
+                    "median_z": float(vals.median()),
+                    "t_stat": t_stat,
+                    "p_ttest_gt0": p_t,
+                    "wilcoxon_stat": w_stat,
+                    "p_wilcoxon_gt0": p_w,
+                })
+            if not sub.empty:
+                mean_max = pd.to_numeric(sub["max_abs_move_z"], errors="coerce").mean()
+                print(f"  {asset:6s} +{w:3d}m: mean max_abs_move_z={mean_max:+.3f}")
+    return pd.DataFrame(results)
+
+
+def test_targeted_categories(cluster_df: pd.DataFrame):
+    print("\n=== C4: targeted category hypotheses ===")
+    specs = []
+    for category in ["central_bank", "politics", "geopolitical", "energy"]:
+        for asset in ASSETS:
+            specs.extend((category, asset, w) for w in [5, 15, 60])
+    specs.extend(("corporate", "ndx", w) for w in [1, 5, 15, 60])
+
+    results = []
+    for category, asset, w in specs:
+        sub = cluster_df[
+            (cluster_df["asset"] == asset)
+            & (cluster_df["window_min"] == w)
+            & (cluster_df["dominant_category"] == category)
+            & cluster_df["base_ts"].notna()
+        ].copy()
+        if len(sub) < 8:
+            continue
+
+        move_vals = pd.to_numeric(sub["max_abs_move_z"], errors="coerce").dropna()
+        t_move, p_t_move, w_move, p_w_move = one_sample_greater(move_vals, center=0.0)
+
+        directional = sub[
+            sub["cluster_target_sentiment"].isin(["bull", "bear"])
+            & sub["target_delta_pct"].notna()
+            & (sub["target_delta_pct"] != 0)
+        ].copy()
+        if len(directional) >= 5:
+            realized = np.where(directional["target_delta_pct"] > 0, "bull", "bear")
+            correct = int((directional["cluster_target_sentiment"].to_numpy() == realized).sum())
+            p_dir = stats.binomtest(correct, len(directional), p=0.5, alternative="greater").pvalue
+            hit_rate = correct / len(directional)
+        else:
+            correct = np.nan
+            p_dir = np.nan
+            hit_rate = np.nan
+
+        results.append({
+            "hypothesis": f"{category}_{asset}_{w}m",
+            "category": category,
+            "asset": asset,
+            "asset_target": target_label_for_asset(asset),
+            "window_min": w,
+            "n_clusters": len(sub),
+            "n_directional": len(directional),
+            "direction_correct": correct,
+            "direction_hit_rate": hit_rate,
+            "p_direction_binom_greater": float(p_dir) if pd.notna(p_dir) else np.nan,
+            "mean_max_abs_move_z": float(move_vals.mean()) if len(move_vals) else np.nan,
+            "median_max_abs_move_z": float(move_vals.median()) if len(move_vals) else np.nan,
+            "t_max_abs_move_z": t_move,
+            "p_max_abs_move_z_ttest_gt0": p_t_move,
+            "wilcoxon_max_abs_move_z": w_move,
+            "p_max_abs_move_z_wilcoxon_gt0": p_w_move,
+        })
+        print(
+            f"  {category:<13s} {asset:6s} +{w:3d}m: n={len(sub):3d} "
+            f"move_z={move_vals.mean() if len(move_vals) else np.nan:+.2f} "
+            f"hit={hit_rate if pd.notna(hit_rate) else np.nan:.1%}"
+        )
+    return pd.DataFrame(results)
+
+
+def test_pre_post_stability(cluster_df: pd.DataFrame, cutoff: pd.Timestamp = KNOWLEDGE_CUTOFF_TS):
+    print("\n=== C5: pre/post cutoff stability ===")
+    df = cluster_df.copy()
+    df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
+    df["sample_period"] = np.where(df["timestamp_utc"] < cutoff, "pre_cutoff", "post_cutoff")
+    results = []
+    for period in ["pre_cutoff", "post_cutoff"]:
+        for asset in ASSETS:
+            for w in WINDOWS_MIN:
+                sub = df[
+                    (df["sample_period"] == period)
+                    & (df["asset"] == asset)
+                    & (df["window_min"] == w)
+                    & df["base_ts"].notna()
+                ].copy()
+                if len(sub) < 20:
+                    continue
+                abs_vals = pd.to_numeric(sub["abs_return_z"], errors="coerce").dropna()
+                move_vals = pd.to_numeric(sub["max_abs_move_z"], errors="coerce").dropna()
+                _, p_abs_t, _, p_abs_w = one_sample_greater(abs_vals, center=0.0)
+                _, p_move_t, _, p_move_w = one_sample_greater(move_vals, center=0.0)
+                directional = sub[
+                    sub["cluster_target_sentiment"].isin(["bull", "bear"])
+                    & sub["target_delta_pct"].notna()
+                    & (sub["target_delta_pct"] != 0)
+                ].copy()
+                if len(directional) >= 5:
+                    realized = np.where(directional["target_delta_pct"] > 0, "bull", "bear")
+                    correct = int((directional["cluster_target_sentiment"].to_numpy() == realized).sum())
+                    p_dir = stats.binomtest(correct, len(directional), p=0.5, alternative="greater").pvalue
+                    hit_rate = correct / len(directional)
+                else:
+                    correct = np.nan
+                    p_dir = np.nan
+                    hit_rate = np.nan
+                results.append({
+                    "sample_period": period,
+                    "cutoff_utc": str(cutoff),
+                    "asset": asset,
+                    "asset_target": target_label_for_asset(asset),
+                    "window_min": w,
+                    "n_clusters": len(sub),
+                    "mean_abs_return_z": float(abs_vals.mean()) if len(abs_vals) else np.nan,
+                    "p_abs_return_z_ttest_gt0": p_abs_t,
+                    "p_abs_return_z_wilcoxon_gt0": p_abs_w,
+                    "mean_max_abs_move_z": float(move_vals.mean()) if len(move_vals) else np.nan,
+                    "p_max_abs_move_z_ttest_gt0": p_move_t,
+                    "p_max_abs_move_z_wilcoxon_gt0": p_move_w,
+                    "n_directional": len(directional),
+                    "direction_correct": correct,
+                    "direction_hit_rate": hit_rate,
+                    "p_direction_binom_greater": float(p_dir) if pd.notna(p_dir) else np.nan,
+                })
+                print(
+                    f"  {period:<11s} {asset:6s} +{w:3d}m: n={len(sub):4d} "
+                    f"move_z={move_vals.mean() if len(move_vals) else np.nan:+.2f}"
+                )
+    return pd.DataFrame(results)
+
+
+def test_multivariate_models(cluster_df: pd.DataFrame):
+    print("\n=== C6: multivariate controls for category, surprise, length ===")
+    results = []
+    for asset in ASSETS:
+        for w in [5, 15, 60]:
+            base = cluster_df[
+                (cluster_df["asset"] == asset)
+                & (cluster_df["window_min"] == w)
+                & cluster_df["base_ts"].notna()
+            ].copy()
+            if len(base) < 80:
+                continue
+            base["abs_cluster_strength"] = pd.to_numeric(base["cluster_abs_target_strength"], errors="coerce")
+            base["log_n_headlines"] = np.log1p(pd.to_numeric(base["n_headlines"], errors="coerce"))
+            base["pre_abs_target_delta_15"] = pd.to_numeric(base["pre_target_delta_pct_15"], errors="coerce").abs()
+            numeric_features = [
+                "abs_cluster_strength",
+                "cluster_surprise_score_max",
+                "cluster_magnitude_score_max",
+                "cluster_confidence_mean",
+                "log_n_headlines",
+                "headline_length_mean",
+                "pre_abs_target_delta_15",
+            ]
+            for outcome in ["abs_return_z", "max_abs_move_z"]:
+                model_df = base[[outcome, "dominant_category"] + numeric_features].copy()
+                for col in [outcome] + numeric_features:
+                    model_df[col] = pd.to_numeric(model_df[col], errors="coerce")
+                model_df = model_df.dropna(subset=[outcome] + numeric_features)
+                if len(model_df) < 80:
+                    continue
+                X_num = model_df[numeric_features].astype(float)
+                X_cat = pd.get_dummies(model_df["dominant_category"], prefix="cat", drop_first=True, dtype=float)
+                X = pd.concat([X_num, X_cat], axis=1)
+                X = sm.add_constant(X, has_constant="add").astype(float)
+                y = model_df[outcome].astype(float)
+                try:
+                    model = fit_ols_robust(y, X)
+                except Exception as exc:
+                    print(f"  {asset:6s} +{w:3d}m {outcome}: OLS failed: {exc}")
+                    continue
+                for term in X.columns:
+                    if term == "const":
+                        continue
+                    results.append({
+                        "asset": asset,
+                        "asset_target": target_label_for_asset(asset),
+                        "window_min": w,
+                        "outcome": outcome,
+                        "term": term,
+                        "n_clusters": len(model_df),
+                        "r2": float(model.rsquared),
+                        "cov_type": str(model.cov_type),
+                        "coef": float(model.params[term]),
+                        "se": float(model.bse[term]),
+                        "p_value": float(model.pvalues[term]),
+                    })
+                strength_p = model.pvalues.get("abs_cluster_strength", np.nan)
+                print(
+                    f"  {asset:6s} +{w:3d}m {outcome}: n={len(model_df):4d} "
+                    f"R2={model.rsquared:.3f} p_strength={strength_p:.4g}"
+                )
+    return pd.DataFrame(results)
+
+
+def winsorize_values(values: pd.Series, lower=0.01, upper=0.99):
+    vals = pd.to_numeric(values, errors="coerce").dropna()
+    if vals.empty:
+        return vals
+    lo, hi = vals.quantile([lower, upper])
+    return vals.clip(lo, hi)
+
+
+def test_outlier_robustness(cluster_df: pd.DataFrame):
+    print("\n=== C7: outlier robustness via 1% winsorization ===")
+    results = []
+    for asset in ASSETS:
+        for w in WINDOWS_MIN:
+            sub = cluster_df[(cluster_df["asset"] == asset) & (cluster_df["window_min"] == w)].copy()
+            for metric in ["abs_return_z", "max_abs_move_z"]:
+                raw = pd.to_numeric(sub[metric], errors="coerce").dropna()
+                if len(raw) < 30:
+                    continue
+                win = winsorize_values(raw)
+                _, p_raw_t, _, p_raw_w = one_sample_greater(raw, center=0.0)
+                _, p_win_t, _, p_win_w = one_sample_greater(win, center=0.0)
+                results.append({
+                    "asset": asset,
+                    "asset_target": target_label_for_asset(asset),
+                    "window_min": w,
+                    "metric": metric,
+                    "n_clusters": len(raw),
+                    "mean_raw": float(raw.mean()),
+                    "mean_winsor_1pct": float(win.mean()),
+                    "median_raw": float(raw.median()),
+                    "p_raw_ttest_gt0": p_raw_t,
+                    "p_raw_wilcoxon_gt0": p_raw_w,
+                    "p_winsor_ttest_gt0": p_win_t,
+                    "p_winsor_wilcoxon_gt0": p_win_w,
+                })
+            if not sub.empty:
+                print(f"  {asset:6s} +{w:3d}m: robustness rows added")
+    return pd.DataFrame(results)
+
+
+def test_model_consensus(returns_df: pd.DataFrame, compare_csv: Path, cluster_dedupe=True):
+    print("\n=== C8: Flash/Pro consensus subset ===")
+    if compare_csv is None or not compare_csv.exists():
+        print("  compare_models.csv not found; skipping consensus test")
+        return pd.DataFrame()
+
+    compare = pd.read_csv(compare_csv, parse_dates=["timestamp_utc"])
+    compare["event_id"] = compare["id"].astype(str)
+    rows = []
+    for asset in ASSETS:
+        sent_col = "sentiment_usd" if asset == "eurusd" else "sentiment_ndx"
+        flash = f"flash_{sent_col}"
+        pro = f"pro_{sent_col}"
+        if flash not in compare.columns or pro not in compare.columns:
+            continue
+        agree = compare[
+            (compare[flash] == compare[pro])
+            & compare[flash].isin(["bull", "bear"])
+        ][["event_id", flash]].copy()
+        agree = agree.rename(columns={flash: "consensus_sentiment"})
+        if agree.empty:
+            continue
+        base = returns_df[returns_df["asset"] == asset].copy()
+        base["event_id"] = base["event_id"].astype(str)
+        merged = base.merge(agree, on="event_id", how="inner")
+        for w in WINDOWS_MIN:
+            sub_raw = merged[
+                (merged["window_min"] == w)
+                & merged["target_delta_pct"].notna()
+                & (merged["target_delta_pct"] != 0)
+            ].copy()
+            sub = first_per_cluster(sub_raw) if cluster_dedupe else sub_raw
+            if len(sub) < 5:
+                continue
+            realized = np.where(sub["target_delta_pct"] > 0, "bull", "bear")
+            correct = int((sub["consensus_sentiment"].to_numpy() == realized).sum())
+            p_binom = stats.binomtest(correct, len(sub), p=0.5, alternative="greater").pvalue
+            rows.append({
+                "asset": asset,
+                "asset_target": target_label_for_asset(asset),
+                "window_min": w,
+                "n_raw": len(sub_raw),
+                "n_clusters": len(sub),
+                "correct": correct,
+                "hit_rate": correct / len(sub),
+                "p_binom_greater": float(p_binom),
+            })
+            print(f"  {asset:6s} +{w:3d}m: consensus n={len(sub):3d} hit={correct/len(sub):.1%} p={p_binom:.4g}")
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
 # Figures and summary metadata
 # ---------------------------------------------------------------------------
 
@@ -1199,6 +1908,11 @@ def build_methodology_summary(args, events, prices, common_start, common_end, dr
         {"setting": "baseline_matching", "value": "same hour UTC and day-of-week when possible"},
         {"setting": "baseline_exclude_buffer_min", "value": args.exclude_buffer_min},
         {"setting": "baseline_per_event", "value": args.baseline_per_event},
+        {"setting": "cluster_level_outputs", "value": "one outcome per event_cluster_id/asset/window using first cluster timestamp"},
+        {"setting": "abnormal_return_standardization", "value": "z-scores vs matched baseline by asset/window/hour/day-of-week"},
+        {"setting": "range_outcomes", "value": "high-low range and max absolute intrawindow move added for every window"},
+        {"setting": "pre_post_cutoff_utc", "value": str(KNOWLEDGE_CUTOFF_TS)},
+        {"setting": "multivariate_controls", "value": "category dummies, surprise, magnitude, confidence, cluster size, headline length, pre-event move"},
         {"setting": "multiple_testing_correction", "value": "Benjamini-Hochberg FDR across all p_* result columns"},
     ]
     for asset, df in prices.items():
@@ -1222,6 +1936,7 @@ def main():
     parser.add_argument("--no-cluster-dedupe", action="store_true", help="Use raw events in non-regression tests")
     parser.add_argument("--baseline-per-event", type=int, default=DEFAULT_BASELINE_PER_EVENT)
     parser.add_argument("--exclude-buffer-min", type=int, default=DEFAULT_EXCLUDE_BUFFER_MIN)
+    parser.add_argument("--compare-models", default=None, help="Optional Flash/Pro comparison CSV for consensus tests")
     args = parser.parse_args()
 
     events, prices = load_data(args.events, args.prices_dir)
@@ -1270,11 +1985,17 @@ def main():
             print(f"  baseline[{asset} +{w}m]: {len(pool):,} candidate windows")
 
     returns_df = attach_volume_ratios(returns_df, baseline_pools)
+    returns_df = attach_abnormal_scores(returns_df, baseline_pools)
     returns_path = out_dir / "event_study_windows.csv"
     returns_df.to_csv(returns_path, index=False)
     print(f"\nWrote {len(returns_df)} rows to {returns_path}")
     print(f"  rows with price returns: {int(returns_df['delta_pct'].notna().sum())}")
     print(f"  closed-period rows: {int(returns_df['is_in_closed_period'].sum())}")
+
+    cluster_df = build_cluster_windows(events, returns_df)
+    cluster_path = out_dir / "cluster_event_study_windows.csv"
+    cluster_df.to_csv(cluster_path, index=False)
+    print(f"  wrote {len(cluster_df)} cluster-window rows to {cluster_path}")
 
     h1 = test_h1(returns_df, baseline_pools, rng, args.baseline_per_event, cluster_dedupe)
     h2 = test_h2(returns_df, cluster_dedupe)
@@ -1291,6 +2012,16 @@ def main():
     h13 = test_h13_surprise(returns_df, cluster_dedupe)
     h14 = test_h14_spillover(returns_df, cluster_dedupe)
 
+    c1 = test_cluster_sentiment(cluster_df)
+    c2 = test_range_outcomes(cluster_df, baseline_pools, rng, args.baseline_per_event)
+    c3 = test_abnormal_z_outcomes(cluster_df)
+    c4 = test_targeted_categories(cluster_df)
+    c5 = test_pre_post_stability(cluster_df)
+    c6 = test_multivariate_models(cluster_df)
+    c7 = test_outlier_robustness(cluster_df)
+    compare_path = Path(args.compare_models) if args.compare_models else out_dir / "compare_models.csv"
+    c8 = test_model_consensus(returns_df, compare_path, cluster_dedupe)
+
     frames = {
         "h1": h1,
         "h2": h2,
@@ -1306,6 +2037,14 @@ def main():
         "h12": h12,
         "h13": h13,
         "h14": h14,
+        "cluster_sentiment": c1,
+        "range_outcomes": c2,
+        "abnormal_z": c3,
+        "targeted_category": c4,
+        "pre_post_stability": c5,
+        "multivariate": c6,
+        "outlier_robustness": c7,
+        "model_consensus": c8,
     }
     frames = add_fdr_corrections(frames)
 

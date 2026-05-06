@@ -39,8 +39,11 @@ Sunt stirile neprogramate dintr-un feed financiar online asociate cu miscari int
    - calculeaza ferestre post/pre cu aliniere conservatoare;
    - corecteaza conventia USD vs EUR/USD;
    - grupeaza evenimente in clustere;
+   - produce si tabel cluster-level;
+   - calculeaza range, max-abs-move si abnormal z-scores;
    - construieste baseline matched;
    - ruleaza H1-H14;
+   - ruleaza extensiile C1-C8: cluster sentiment, range outcomes, z-scores, target categories, pre/post cutoff, multivariate controls, outlier robustness, model consensus;
    - adauga FDR q-values.
 
 5. `validate_outputs.py`
@@ -71,6 +74,17 @@ Sunt stirile neprogramate dintr-un feed financiar online asociate cu miscari int
 - H13: surprise level.
 - H14: cross-asset spillover.
 
+### Extensii pentru paper
+
+- C1: cluster-level sentiment direction.
+- C2: range/max-absolute-move outcomes.
+- C3: abnormal z-score outcomes.
+- C4: ipoteze targetate pe categorii.
+- C5: pre/post `2026-01-15` stability.
+- C6: multivariate controls.
+- C7: 1% winsorized outlier robustness.
+- C8: Flash/Pro consensus subset.
+
 ## Standarde metodologice
 
 - Foloseste q-values FDR pentru concluzii.
@@ -78,6 +92,8 @@ Sunt stirile neprogramate dintr-un feed financiar online asociate cu miscari int
 - Nu folosi `confidence` LLM ca probabilitate calibrata.
 - Nu prezenta H8 ca dovada directa de front-running.
 - Nu prezenta volumul Dukascopy ca volum real CME/interbank.
+- Prezinta range/max-move ca rezultat central mai stabil decat directia.
+- Foloseste split-ul post-cutoff ca robustete, nu ca dovada absoluta impotriva memorization.
 - Nu spune “toate ipotezele sunt confirmate”.
 
 ## Ce trebuie finalizat pentru paper
@@ -91,9 +107,10 @@ Sunt stirile neprogramate dintr-un feed financiar online asociate cu miscari int
 - Tabel central cu verdict pe ipoteze.
 - 4-6 case studies cu timestamp verificat fata de sursa primara a stirii.
 - Actualizare preturi pana la finalul exportului sau justificare a filtrarii.
+- Optional urmator: DXY/QQQ ca validare cross-asset, daca timpul permite.
 
 ## Verdict asteptat
 
 Paper-ul ar trebui sa sustina o concluzie nuantata:
 
-> Unexpected online news is robustly associated with elevated intraday absolute returns, but LLM sentiment provides only a modest directional edge. Feed latency and clustered news arrivals are central methodological challenges in high-frequency news event studies.
+> Unexpected online news is robustly associated with elevated intraday abnormal movement, especially range and maximum intrawindow moves, but LLM sentiment provides only a modest directional edge. Feed latency and clustered news arrivals are central methodological challenges in high-frequency news event studies.
