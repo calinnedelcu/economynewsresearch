@@ -1,0 +1,213 @@
+# 5. Results
+
+We organise the discussion around six themes (Sections 5.1-5.6). The
+strongest single finding (Section 5.1) is a robust and substantial
+increase in intraday magnitude and range around news events, present
+across all assets and windows. The directional content of LLM sentiment
+(Section 5.2) is modest, statistically detectable on a small number of
+windows after FDR adjustment, and economically below transaction costs.
+The remaining subsections (5.3-5.5) cover heterogeneity, timing, and
+market-structure questions, while Section 5.6 reports the robustness
+defences. Throughout, we report Benjamini-Hochberg $q$-values in the
+text; raw $p$-values appear in the tables.
+
+## 5.1 Volatility and Magnitude: Events Move Markets
+
+We first ask whether news events are associated with abnormal intraday
+movement, irrespective of direction. The answer is unambiguously yes.
+
+**H1 (event vs matched baseline absolute return).** Across both assets
+and all five window lengths, the mean absolute event return exceeds the
+mean absolute matched-baseline return by a factor between $1.33\times$
+and $1.87\times$. The smallest ratio occurs on the longest NDX window
+(240 minutes), the largest on the shortest EUR/USD window (1 minute).
+All ten cells reach $q < 10^{-14}$ on a one-sided Mann-Whitney $U$ test
+and remain significant under a Welch $t$-test robustness check
+(Appendix [N]). On the primary $5/15/60$-minute windows the event/baseline
+ratios are $\{1.76, 1.69, 1.58\}$ for EUR/USD and $\{1.56, 1.57, 1.43\}$
+for NDX.
+
+**C2 (range and maximum absolute intra-window move).** The intra-window
+range and the maximum absolute move are even more strongly elevated
+than the close-to-close return. For EUR/USD the range/baseline ratio is
+$1.76\times$ at 5 minutes and $1.58\times$ at 60 minutes; for NDX the
+corresponding values are $1.63\times$ and $1.51\times$. All twenty cells
+in this table reach $q < 10^{-30}$. The economic interpretation is that
+news events generate intra-window excursions that close-to-close
+returns understate, often because the price overshoots and partially
+reverses within the same window. This is the single most useful new
+result of the analysis and we recommend that practitioners reading the
+paper attend to it more than to any of the direction-based tests.
+
+**C3 (standardised abnormal $z$-scores).** Re-expressing the same
+outcomes as standardised abnormal scores against the hour-of-day,
+day-of-week matched baseline confirms the pattern on a dimensionless
+scale. The mean $|z|$ on the close-to-close return is in the range
+$0.57$-$1.24$ across assets and windows; the mean $|z|$ on range is in
+the range $1.04$-$1.53$; and the mean $|z|$ on the maximum absolute move
+is in the range $0.92$-$2.40$. The signed return $z$-scores are not
+significantly different from zero in most cells, reinforcing the
+finding that the news effect is on magnitude rather than on direction.
+
+## 5.2 Direction: Modest, and Below Transaction Costs
+
+**H2 (LLM sentiment hit rate).** The LLM-derived sentiment label is a
+weak directional predictor. Hit rates against the realised target
+direction range from $49.0$ to $54.0$ percent across the ten
+asset-window cells; the largest hit rate (EUR/USD, 60 minutes,
+$54.03\%$ on $n=944$ clusters) is the only cell that reaches
+$q < 0.02$. After BH-FDR adjustment, no other cell survives at $q <
+0.05$. The headline picture is consistent across primary windows:
+direction is detectable but small.
+
+**C1 (cluster-level direction).** Aggregating sentiment to cluster
+level (using the modal sentiment within each 15-minute cluster) gives
+the same qualitative pattern with slightly improved hit rates on the
+short NDX windows ($53.9\%$ at 5 minutes with $q = 0.012$; $53.2\%$ at
+15 minutes with $q = 0.038$). EUR/USD cluster-level hit rates remain
+within sampling noise of $50\%$ at the short windows and improve only
+at 60 minutes.
+
+**LLM versus Loughran-McDonald dictionary baseline.** A side-by-side
+comparison of hit rates between the LLM-derived sentiment and the
+deterministic Loughran-McDonald dictionary
+[@loughran2011liability], computed on identical event windows,
+shows that the LLM outperforms the dictionary by $2$-$6$ percentage
+points on direction across the primary $5/15/60$-minute windows. On
+NDX short windows the dictionary in fact underperforms a coin flip
+(hit rate of $47.0$-$47.8\%$), reflecting the dictionary's
+tendency to map every politically-tinged headline to a negative tone
+that does not correspond to equity-index direction in the modern
+period. The LLM also produces cross-asset disagreement (sentiment_usd
+$\neq$ sentiment_ndx) on $73.5\%$ of events, capturing exactly the
+risk-on/risk-off asymmetry that a single-polarity dictionary cannot
+express. We treat this as the principal justification for the LLM
+methodology over the standard dictionary baseline.
+
+**Backtest with transaction costs.** A separate backtest of seven
+naive sentiment-following strategies, all with realistic spread/slippage
+costs, produces negative cumulative returns and profit factors below
+$1.0$ on every variant tested. The same strategies become marginally
+positive when costs are removed, which is consistent with the H2/C1
+picture: the directional edge exists but is too small to overcome
+intraday execution friction in either asset. We report this as evidence
+that the directional signal, while statistically detectable, is not
+economically actionable in the form recovered by these labels.
+
+## 5.3 Heterogeneity by Category and Time of Day
+
+**C4 (per-category targeted tests).** Across the five non-trivial
+categories (`central_bank`, `geopolitical`, `politics`, `energy`,
+`corporate`), the volatility-magnitude finding of Section 5.1 holds
+uniformly: standardised abnormal $z$-scores on the maximum absolute
+move are significantly positive at $q < 10^{-9}$ in every category-asset-window
+cell we tested. The directional content is more mixed: central-bank
+events on the NDX 15-minute window achieve a hit rate of $55.8\%$
+with $q = 0.058$, but no other single category-asset-window cell
+reaches $q < 0.05$ on direction. The pattern is that category-level
+information helps locate where the magnitude reaction is largest
+(central-bank releases produce the highest absolute moves on EUR/USD,
+geopolitical events the highest on NDX) without sharpening direction
+in a transportable way.
+
+**H11 (time-of-day and day-of-week).** EUR/USD shows a robust
+hour-of-day effect on the event/baseline ratio (Kruskal-Wallis
+$p < 10^{-12}$, $q < 10^{-11}$), with the largest effects clustered
+around the New York open. The day-of-week effect is not statistically
+significant. NDX shows neither effect at a level that survives FDR
+correction; we attribute this to the more uniform liquidity profile of
+the index relative to a single currency pair.
+
+## 5.4 Timing and Persistence
+
+**H8 (pre-event drift).** The absolute return in the 15 minutes
+preceding an event is significantly elevated above the matched
+baseline on both assets: EUR/USD mean pre-event $|r| = 0.053$ versus
+baseline $0.031$ ($q < 10^{-46}$), NDX $|r| = 0.158$ versus baseline
+$0.092$ ($q < 10^{-40}$). The pre-event drift is on the same order of
+magnitude as the post-event drift for the same windows. We interpret
+this finding cautiously: the Discord timestamp is the timestamp at
+which the FinancialJuice account posts the headline, not the timestamp
+of the underlying primary source (wire service, agency feed, official
+release). The most plausible reading of the pre-event drift is
+information arrival latency in the public feed rather than insider
+trading or front-running, but the data alone cannot adjudicate between
+these. Practitioners reading this section should infer that entering a
+trade at the timestamp of the Discord post is often already late.
+
+**H9 (sign persistence between $+15$m and $+4$h).** Across both
+assets, the sign of the $+15$-minute return agrees with the sign of
+the $+4$-hour return on $57.6\%$ of events ($q < 10^{-4}$ on both
+assets). The median absolute size ratio between the two windows is
+$3.1\times$ for EUR/USD and $4.5\times$ for NDX, indicating that the
+initial move is typically extended (not reversed) over the subsequent
+several hours. This is a useful complement to Section 5.2: while
+direction is hard to predict, conditional on a move having occurred in
+the first quarter-hour, it is more likely to be extended than reversed
+over the rest of the trading session.
+
+## 5.5 Market Structure
+
+**H4 (closed-period gap).** When markets are closed (weekends,
+holidays), we aggregate the target sentiment of events occurring
+within the closed period and regress the realised opening gap on the
+aggregate sentiment. On NDX, the coefficient is $+0.268$ with $q =
+0.021$ on 92 closed periods ($R^2 = 7.7\%$); on EUR/USD the
+coefficient is $+0.102$ with $q = 0.054$ on 32 periods ($R^2 = 10.3\%$).
+The NDX result is the cleaner of the two, consistent with the longer
+official non-trading window for equities than for FX.
+
+**H14 (cross-asset)**. The Pearson correlation between EUR/USD
+event-window returns and NDX event-window returns at 15 minutes is
+$-0.148$ ($q < 10^{-6}$), as expected from the macroeconomic risk-on/
+risk-off pattern under which USD strength tends to coincide with NDX
+weakness. Re-expressed in the USD-proxy convention, the correlation
+becomes $+0.148$ and the sign-match rate (USD-proxy and NDX moving in
+the same direction) is $56.6\%$ across $1{,}176$ clusters ($q <
+10^{-5}$). We report both signs to forestall misinterpretation when
+the paper is read alongside event studies that work directly with the
+EUR/USD price.
+
+## 5.6 Robustness
+
+The Section 5.1-5.5 results are supported by three robustness
+exercises.
+
+**C5 (pre/post 2026-01-15 knowledge-cutoff split).** Splitting the
+sample at the LLM's training data cutoff, the central magnitude
+findings hold on both halves with $q < 10^{-13}$ throughout. On the
+pre-cutoff half, mean $|z|$ for the absolute return is $0.80$-$1.00$
+across primary windows on EUR/USD and $0.64$-$0.83$ on NDX; the
+post-cutoff half is statistically similar. This argues against an
+explanation in which the LLM's effect is driven by memorisation of
+training-period news. Direction hit rates on the post-cutoff half
+remain within the same modest range reported in Section 5.2; the
+NDX 5-minute pre-cutoff hit rate is $55.8\%$ with $q = 0.002$.
+
+**C6 (multivariate controls).** A multivariate OLS of the standardised
+abnormal $|z|$ on category dummies, surprise level, expected magnitude,
+LLM confidence, log cluster size, mean headline length, and pre-event
+move, with cluster-robust standard errors, recovers two controls that
+are consistently informative across cells: $\log(\text{cluster size})$
+($q < 0.02$ in the EUR/USD 5-minute cell) and pre-event drift
+($q < 0.002$ in the same cell). The cluster-size finding implies that
+larger news bursts produce larger reactions on average, even
+controlling for the sentiment and category labels. The pre-event-drift
+control complements the H8 result by showing that the event-window
+reaction is partially predictable from the run-up to the event.
+Category dummies absorb the energy and corporate effects identified in
+C4.
+
+**C7 (winsorisation at the 1 percent tails).** Winsorising every
+outcome at the $1\%$ tails produces mean $|z|$ values that are within
+$5$-$10\%$ of the raw mean and $p$-values that remain below
+$10^{-30}$ in the central cells. The headline magnitude finding is
+not driven by a small number of extreme observations.
+
+**Auxiliary LLM labels.** The LLM's `expected_magnitude` and
+`surprise_level` labels (consolidating H5 and H13) have modest
+additional explanatory power, with ANOVA $F$-statistics that are
+significant at $q < 0.05$ on a minority of cells, primarily for NDX
+short windows. We report the full table in Appendix [N] but
+recommend treating these labels as exploratory rather than as core
+inputs.
