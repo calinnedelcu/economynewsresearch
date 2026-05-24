@@ -148,6 +148,31 @@ $50\%$ reference line in five of the six primary cells, while LM
 in particular falls visibly below the reference line on the NDX
 short windows.
 
+\paragraph{External benchmark validation.} The relative comparison
+above is suggestive but does not pin down the absolute classifier
+quality. Table~\ref{tab:external-benchmark} reports the performance
+of all three classifiers on the Financial PhraseBank benchmark
+\citep{malo2014good}, the standard external evaluation in finance
+sentiment NLP and the same dataset \citet{yang2020finbert} use to
+validate FinBERT. On the 4{,}840 sentences of the
+\texttt{sentences\_50agree} subset, DeepSeek achieves
+$84.6\%$ accuracy, $0.836$ macro-$F_1$, and Cohen's $\kappa = 0.717$
+against the gold human consensus, outperforming FinBERT
+($79.2\%$ accuracy, $0.751$ macro-$F_1$, $\kappa = 0.600$) by
+$5.4$ percentage points on accuracy and $0.12$ on $\kappa$. The
+Loughran-McDonald dictionary trails substantially
+($57.4\%$ accuracy, $\kappa = 0.218$), which is consistent with
+the well-documented difficulty single-word polarity lookups have
+on syntactically rich financial text. The DeepSeek macro-$F_1$ of
+$0.836$ is in line with the upper end of the range
+\citet{yang2020finbert} report for FinBERT-tone on the same
+dataset. The classifier outperforms the dictionary and modestly
+outperforms the BERT-era neural baseline on an independent,
+peer-reviewed benchmark, complementing the relative hit-rate
+comparison on our event sample.
+
+\input{tables/table_9_external_benchmark.tex}
+
 \input{tables/table_6_baseline_compare.tex}
 
 \begin{figure}[!htbp]

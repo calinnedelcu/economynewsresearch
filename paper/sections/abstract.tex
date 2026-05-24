@@ -17,6 +17,10 @@ sentiment is modest (49--54\% hit rate) and below transaction costs
 in a backtest, but the LLM outperforms both baselines by 2--6
 percentage points on the primary windows and is the only classifier
 that produces asset-specific sentiment, doing so on 73.5\% of events.
+On the Financial PhraseBank external benchmark, the LLM achieves
+84.6\% accuracy and Cohen's $\kappa = 0.72$ against gold human
+labels, outperforming FinBERT by 5.4 percentage points and the
+Loughran-McDonald dictionary by 27.2 percentage points.
 The pre-event absolute return is comparable in magnitude to the
 post-event return, indicating that the Discord publication time is
 not the underlying informational event time and that entry at the

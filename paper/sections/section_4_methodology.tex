@@ -263,17 +263,38 @@ communications. Like the dictionary baseline, FinBERT outputs a
 single polarity (positive/negative/neutral) per document and cannot
 produce asset-specific sentiment.
 
+\paragraph{External benchmark validation.} The two reference
+baselines above test the LLM relative to alternative classifiers on
+our specific event sample, but they do not validate the LLM in
+absolute terms against a human-annotated gold standard. To address
+this, we re-run all three classifiers on the Financial PhraseBank
+benchmark \citep{malo2014good}, the de facto standard finance
+sentiment evaluation dataset and the same benchmark
+\citet{yang2020finbert} use to validate FinBERT. Financial
+PhraseBank contains 4{,}840 sentences from financial news annotated
+positive/negative/neutral by 16 finance professionals; we use the
+\texttt{sentences\_50agree} configuration (sentences for which at
+least half of annotators agree on the label). For DeepSeek, we use a
+benchmark-adapted prompt that maps to PhraseBank's three-class
+scheme so that the production prompt's USD/NDX framing does not
+bias the comparison. Section~\ref{ssec:results-direction} reports
+accuracy, macro-$F_1$, per-class $F_1$, and Cohen's $\kappa$ for
+each classifier against the gold human consensus. This procedure
+validates the classifier on an external, peer-reviewed dataset with
+known difficulty levels and without requiring human annotation
+effort on our event sample.
+
 \paragraph{Cross-model consensus.} A 200-event subsample is
 independently classified by \texttt{deepseek-v4-flash} and
 \texttt{deepseek-v4-pro} to measure intra-LLM agreement; this is
 reported as exploratory due to sample size.
 
-\paragraph{Manual validation.} A separate sample of 200 events,
-stratified across categories and split pre and post the LLM
-knowledge cutoff, is reserved for double-coded human annotation. We
-report Cohen's $\kappa$ between annotators, $F_1$ of the LLM against
-the two-annotator consensus, and the same split-by-cutoff comparison
-to address memorisation concerns. The annotation infrastructure
+\paragraph{Human validation (future work).} A separate sample of 200
+events, stratified across categories and split pre and post the LLM
+knowledge cutoff, is reserved for double-coded expert annotation in
+a follow-up study. The annotation infrastructure
 (\texttt{prepare\_manual\_validation.py},
-\texttt{score\_manual\_validation.py}) is in place; annotation is
-in progress at the time of writing.
+\texttt{score\_manual\_validation.py}) is in place. Until that work
+completes, the external-benchmark validation described above and the
+multi-classifier comparison on our sample serve as the primary
+quality evidence for the LLM labels.

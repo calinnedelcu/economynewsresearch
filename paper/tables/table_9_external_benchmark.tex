@@ -1,0 +1,27 @@
+\begin{table}[!htbp]
+\centering
+\caption{External benchmark validation on Financial PhraseBank.}
+\label{tab:external-benchmark}
+\begin{threeparttable}
+\small
+\begin{tabular}{lrcccccc}
+\toprule
+\textbf{Classifier} & \textbf{$N$} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Cohen's $\kappa$} & \textbf{$F_1$ pos.} & \textbf{$F_1$ neg.} & \textbf{$F_1$ neu.} \\
+\midrule
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Performance of the three sentiment classifiers
+on the Financial PhraseBank dataset \citep{malo2014good}, the
+de facto standard benchmark in finance NLP and the same dataset
+\citet{yang2020finbert} use to validate FinBERT. We use the
+\texttt{sentences\_50agree} configuration (positive/negative/neutral
+labels where at least half of the 16 human annotators agree).
+For DeepSeek, we use a benchmark-adapted prompt that maps to
+PhraseBank's three-class scheme; the production prompt's
+USD/NDX framing is not used here. Cohen's $\kappa$ measures
+agreement against the gold human consensus.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

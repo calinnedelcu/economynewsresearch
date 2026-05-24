@@ -725,6 +725,57 @@ def table_11_winsorisation():
     write_table("table_11_winsorisation", "\n".join(body) + "\n")
 
 
+def table_9_external_benchmark():
+    """External benchmark on Financial PhraseBank (Malo et al. 2014)."""
+    path = OUTPUTS / "external_benchmark_metrics.csv"
+    if not path.exists():
+        print(f"  skipping T9: {path} not found")
+        return
+    m = pd.read_csv(path)
+
+    # Reorder: deepseek, finbert, lm
+    order = ["deepseek", "finbert", "lm"]
+    label_map = {"deepseek": "DeepSeek-v4-flash", "finbert": "FinBERT-tone", "lm": "Loughran-McDonald"}
+    m = m.set_index("classifier").loc[[c for c in order if c in m.index]].reset_index()
+
+    body = []
+    body.append(r"\begin{table}[!htbp]")
+    body.append(r"\centering")
+    body.append(r"\caption{External benchmark validation on Financial PhraseBank.}")
+    body.append(r"\label{tab:external-benchmark}")
+    body.append(r"\begin{threeparttable}")
+    body.append(r"\small")
+    body.append(r"\begin{tabular}{lrcccccc}")
+    body.append(r"\toprule")
+    body.append(r"\textbf{Classifier} & \textbf{$N$} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Cohen's $\kappa$} & \textbf{$F_1$ pos.} & \textbf{$F_1$ neg.} & \textbf{$F_1$ neu.} \\")
+    body.append(r"\midrule")
+    for _, r in m.iterrows():
+        body.append(
+            f"{label_map.get(r['classifier'], r['classifier'])} & "
+            f"{fmt_int(r['n'])} & {fmt_num(r['accuracy'], 3)} & {fmt_num(r['macro_f1'], 3)} & "
+            f"{fmt_num(r['cohens_kappa'], 3)} & {fmt_num(r['f1_positive'], 3)} & "
+            f"{fmt_num(r['f1_negative'], 3)} & {fmt_num(r['f1_neutral'], 3)} \\\\"
+        )
+    body.append(r"\bottomrule")
+    body.append(r"\end{tabular}")
+    body.append(r"\begin{tablenotes}")
+    body.append(r"\footnotesize")
+    body.append(r"\item \textit{Notes.} Performance of the three sentiment classifiers")
+    body.append(r"on the Financial PhraseBank dataset \citep{malo2014good}, the")
+    body.append(r"de facto standard benchmark in finance NLP and the same dataset")
+    body.append(r"\citet{yang2020finbert} use to validate FinBERT. We use the")
+    body.append(r"\texttt{sentences\_50agree} configuration (positive/negative/neutral")
+    body.append(r"labels where at least half of the 16 human annotators agree).")
+    body.append(r"For DeepSeek, we use a benchmark-adapted prompt that maps to")
+    body.append(r"PhraseBank's three-class scheme; the production prompt's")
+    body.append(r"USD/NDX framing is not used here. Cohen's $\kappa$ measures")
+    body.append(r"agreement against the gold human consensus.")
+    body.append(r"\end{tablenotes}")
+    body.append(r"\end{threeparttable}")
+    body.append(r"\end{table}")
+    write_table("table_9_external_benchmark", "\n".join(body) + "\n")
+
+
 def main():
     print(f"Writing tables to {TABLES}/ ...")
     table_2_variable_definitions()
@@ -734,6 +785,7 @@ def main():
     table_6_baseline_compare()
     table_7_multivariate()
     table_8_pre_post_cutoff()
+    table_9_external_benchmark()
     table_10_backtest()
     table_11_winsorisation()
     print("Done.")
