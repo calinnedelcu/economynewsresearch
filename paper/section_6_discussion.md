@@ -1,0 +1,130 @@
+# 6. Discussion
+
+The results in Section 5 are most usefully read in pairs that
+illuminate, by contrast, what news data of this kind can and cannot do.
+
+## 6.1 Magnitude is easier to predict than direction
+
+The most stable result of the analysis is that unscheduled news events
+are associated with substantially elevated intraday magnitude
+(Section 5.1), while the directional content of the same headlines is
+small and largely below transaction costs (Section 5.2). The two
+results are not in tension: they describe complementary properties of
+the same underlying phenomenon. A breaking headline produces price
+discovery-the market revises its mid-quote in response to new
+information-but the sign of that revision depends on context, prior
+positioning, and what fraction of the news was already anticipated.
+Magnitude captures the price-discovery event itself; direction asks
+the harder question of which side of the new mid-quote the prior
+expectation was on.
+
+For practitioners, the practical implication is that news of this kind
+is more useful as a volatility filter than as a directional signal.
+Volatility-aware position sizing, stop-loss design that allows for
+post-news range expansion, and execution rules that avoid mean-reversion
+trades immediately after a headline are the kinds of operational uses
+of this dataset that are most likely to yield value. Directional
+signals derived from the LLM sentiment, by contrast, should be
+weighted in the same way as any other weak predictor: as a contributing
+factor in a broader decision process, not as a standalone trigger.
+
+This pattern is also consistent with @antweiler2004talk, who find that
+message-board posting activity (a volume proxy) is more strongly
+associated with realised volatility than its bullishness content is
+with returns, and with the @heston2017news observation that news has
+faster effects on volatility than on directional returns.
+
+## 6.2 The LLM advantage is qualitative, not quantitative-only
+
+The hit-rate advantage of the LLM-derived sentiment over the
+Loughran-McDonald dictionary is in the $2$-$6$ percentage point range on
+the primary windows (Section 5.2). This is not a dramatic improvement
+on the headline metric. The qualitative advantage is more substantial:
+the LLM produces different sentiment for USD and for NDX on $73.5\%$
+of events, a property that captures the cross-asset asymmetry of
+risk-on/risk-off events that a single-polarity dictionary cannot
+express. A geopolitical escalation that is bearish for the dollar
+through a flight-to-safety mechanism is the same headline whether one
+is thinking about equities or about the dollar, but the price
+implication is opposite. The LLM treats them as separate questions; the
+dictionary cannot.
+
+This suggests that the appropriate way to evaluate LLM-based sentiment
+classifiers in finance is not only by the hit rate on a single asset
+but also by the cross-asset coherence of the labels with the
+known macro-finance taxonomy. We make this comparison explicit in
+Section 5.2 and recommend that subsequent work in this area report
+both metrics.
+
+## 6.3 Pre-event drift: latency, not necessarily front-running
+
+The pre-event drift result (Section 5.4, H8) is the methodologically
+most consequential finding of the analysis. The absolute return in the
+fifteen minutes preceding a Discord headline is elevated above the
+matched baseline at $q < 10^{-40}$ on both assets, with a magnitude
+comparable to the post-event drift on the same window.
+
+A naive interpretation of this result would be evidence of insider
+trading or systematic front-running. We caution against that reading.
+The Discord timestamp on which our event windows are aligned is the
+timestamp at which the FinancialJuice account publishes the headline,
+which is downstream of the underlying primary source-typically a wire
+service, an agency feed, or an official release calendar. Without
+direct access to the primary-source timestamp for each event we
+cannot decompose the pre-event drift into "feed latency" and "true
+pre-disclosure activity"; we expect that the former dominates for
+most events.
+
+The implication for practitioners is unambiguous regardless of the
+decomposition. A trade entered at the timestamp of the public
+Discord headline is, on average, already late by the order of
+fifteen minutes' worth of price discovery, and the standard
+event-study assumption that the public publication time is the
+informational event time is materially violated in our setting. Future
+work on online-news event studies should either obtain
+primary-source timestamps or report the pre-event drift as a
+diagnostic.
+
+## 6.4 News clusters as the unit of analysis
+
+The cluster size control in the multivariate regression (Section 5.6,
+C6) is significant at $q < 0.02$ across multiple cells, confirming the
+intuition that a single high-impact event (a central-bank decision)
+that generates a burst of related headlines (the statement, the press
+conference, individual quotations) is one informational event rather
+than ten. The cluster-level direction tests (C1) are accordingly more
+informative than the event-level tests on the short NDX windows.
+Future work should design the unit of observation at the cluster
+level explicitly, possibly by adopting a topic-coherence criterion in
+addition to the temporal-gap rule we use here.
+
+## 6.5 Why EUR/USD and NDX results differ
+
+The EUR/USD and NDX results diverge in several places. The EUR/USD
+magnitude effect is somewhat larger than the NDX magnitude effect at
+short windows, while the NDX direction effect is somewhat sharper on
+the $5$-$15$ minute windows after cluster aggregation. We attribute
+these differences to two structural factors. First, the news mix
+differs: central-bank and macro-political news, which dominate our
+gold sample, are inherently more EUR/USD-relevant than NDX-relevant,
+while corporate news (which we have less of) would be NDX-relevant.
+Second, the liquidity profile differs: EUR/USD is the most liquid
+spot pair in the world and absorbs news quickly through tight
+quotes, while NDX (and our `E_NQ-100` CFD proxy) is index-level
+liquidity with somewhat slower response.
+
+The cross-asset correlation result (H14) confirms the macro story:
+under the USD-proxy convention, USD strength and NDX move in the
+same direction $56.6\%$ of the time at the cluster level. This is the
+expected risk-on/risk-off coherence and a useful internal consistency
+check on the dataset.
+
+## 6.6 What we do not test
+
+We do not test whether more sophisticated LLM prompting (chain-of-thought,
+multi-prompt ensembles), more recent LLM models, or fine-tuning on the
+manually-validated subsample would improve the directional results.
+These are natural extensions and we view them as the most promising
+direction for follow-up work, particularly in combination with
+primary-source timestamps that would allow the pre-event drift to be
+decomposed cleanly.

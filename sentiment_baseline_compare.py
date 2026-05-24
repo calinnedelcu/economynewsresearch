@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Compare LLM vs Loughran-McDonald dictionary direction hit rates.
+"""Three-way comparison: LLM vs Loughran-McDonald vs FinBERT.
 
 Runs the H2-equivalent direction test (binomial one-sided vs 0.5) on
-both the LLM-derived sentiment and the LM-dictionary-derived sentiment,
-on the same event windows. Reports side-by-side hit rates with CI95
-and BH-FDR q-values.
+each sentiment source over identical event windows. Reports side-by-side
+hit rates with Wilson 95% CI and BH-FDR q-values.
 
-Requires that both `events_sentiment.csv` (LLM) and
-`events_sentiment_baseline.csv` (LM) exist, and that
-`event_study_windows.csv` has been generated.
+Requires:
+    outputs/events_sentiment.csv           (LLM)
+    outputs/events_sentiment_baseline.csv  (Loughran-McDonald dictionary)
+    outputs/events_sentiment_finbert.csv   (FinBERT-tone, optional)
+    outputs/event_study_windows.csv
+
+If the FinBERT file is missing, only LLM vs LM is reported.
 
 Usage:
     python sentiment_baseline_compare.py
@@ -34,7 +37,11 @@ def target_col(asset: str) -> str:
 def sentiment_col(asset: str, source: str) -> str:
     if source == "llm":
         return "sentiment_usd" if asset == "eurusd" else "sentiment_ndx"
-    return "sentiment_usd_lm" if asset == "eurusd" else "sentiment_ndx_lm"
+    if source == "lm":
+        return "sentiment_usd_lm" if asset == "eurusd" else "sentiment_ndx_lm"
+    if source == "finbert":
+        return "sentiment_usd_finbert" if asset == "eurusd" else "sentiment_ndx_finbert"
+    raise ValueError(f"unknown sentiment source: {source}")
 
 
 def first_per_cluster(sub: pd.DataFrame) -> pd.DataFrame:
@@ -95,6 +102,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--llm", default="outputs/events_sentiment.csv")
     parser.add_argument("--lm", default="outputs/events_sentiment_baseline.csv")
+    parser.add_argument("--finbert", default="outputs/events_sentiment_finbert.csv")
     parser.add_argument("--windows", default="outputs/event_study_windows.csv")
     parser.add_argument("-o", "--output", default="outputs/sentiment_baseline_compare.csv")
     args = parser.parse_args()
@@ -111,11 +119,22 @@ def main():
                                          "sentiment_ndx_llm": "sentiment_ndx"})
     merged = merged.merge(lm_df, left_on="event_id", right_on="id", how="left", suffixes=("", "_lm_dup"))
 
+    sources = ["llm", "lm"]
+    finbert_path = Path(args.finbert)
+    if finbert_path.exists():
+        finbert_df = pd.read_csv(finbert_path)[["id", "sentiment_usd_finbert", "sentiment_ndx_finbert"]]
+        merged = merged.merge(finbert_df, left_on="event_id", right_on="id",
+                              how="left", suffixes=("", "_finbert_dup"))
+        sources.append("finbert")
+        print(f"Including FinBERT from {finbert_path}")
+    else:
+        print(f"FinBERT file not found at {finbert_path}, skipping")
+
     rows = []
     for w in WINDOWS_MIN:
         for asset in ASSETS:
             sub = merged[(merged["window_min"] == w) & (merged["asset"] == asset)]
-            for source in ["llm", "lm"]:
+            for source in sources:
                 res = hit_rate_test(sub, asset, source)
                 if res is None:
                     continue
@@ -130,12 +149,13 @@ def main():
     results.to_csv(args.output, index=False)
     print(f"Wrote {len(results)} rows to {args.output}\n")
 
-    print("=" * 90)
-    print(f"{'src':>4s} {'asset':>6s} {'win':>4s} {'n':>5s} {'hit':>7s} {'CI95':>17s} {'p':>10s} {'q':>10s}")
-    print("=" * 90)
+    source_labels = [s.upper() for s in sources] if "sources" in dir() else ["LLM", "LM", "FINBERT"]
+    print("=" * 100)
+    print(f"{'src':>8s} {'asset':>6s} {'win':>4s} {'n':>5s} {'hit':>7s} {'CI95':>17s} {'p':>10s} {'q':>10s}")
+    print("=" * 100)
     for asset in ASSETS:
         for w in WINDOWS_MIN:
-            for source_label in ["LLM", "LM"]:
+            for source_label in ["LLM", "LM", "FINBERT"]:
                 row = results[
                     (results["asset"] == asset)
                     & (results["window_min"] == w)
@@ -145,22 +165,27 @@ def main():
                     continue
                 r = row.iloc[0]
                 ci = f"[{r['ci95_low']:.3f},{r['ci95_high']:.3f}]"
-                print(f"{source_label:>4s} {asset:>6s} {w:>4d} {int(r['n']):>5d} "
+                print(f"{source_label:>8s} {asset:>6s} {w:>4d} {int(r['n']):>5d} "
                       f"{r['hit_rate']:>7.1%} {ci:>17s} {r['p_binom_greater']:>10.4g} "
                       f"{r['q_binom_greater']:>10.4g}")
 
-    print("\n--- Headline summary ---")
+    print("\n--- Headline summary (LLM vs LM, LLM vs FinBERT) ---")
     for asset in ASSETS:
         for w in [5, 15, 60]:
             llm_row = results[(results["asset"] == asset) & (results["window_min"] == w) & (results["source"] == "LLM")]
             lm_row = results[(results["asset"] == asset) & (results["window_min"] == w) & (results["source"] == "LM")]
-            if llm_row.empty or lm_row.empty:
+            fb_row = results[(results["asset"] == asset) & (results["window_min"] == w) & (results["source"] == "FINBERT")]
+            if llm_row.empty:
                 continue
             llm_hit = llm_row.iloc[0]["hit_rate"]
-            lm_hit = lm_row.iloc[0]["hit_rate"]
-            diff_pp = (llm_hit - lm_hit) * 100
-            print(f"  {asset:6s} +{w:3d}m: LLM {llm_hit:.1%} vs LM {lm_hit:.1%} "
-                  f"-> LLM wins by {diff_pp:+.1f} pp")
+            lm_hit = lm_row.iloc[0]["hit_rate"] if not lm_row.empty else None
+            fb_hit = fb_row.iloc[0]["hit_rate"] if not fb_row.empty else None
+            parts = [f"LLM {llm_hit:.1%}"]
+            if lm_hit is not None:
+                parts.append(f"LM {lm_hit:.1%} ({(llm_hit-lm_hit)*100:+.1f}pp)")
+            if fb_hit is not None:
+                parts.append(f"FinBERT {fb_hit:.1%} ({(llm_hit-fb_hit)*100:+.1f}pp)")
+            print(f"  {asset:6s} +{w:3d}m: " + "  vs  ".join(parts))
 
 
 if __name__ == "__main__":

@@ -58,9 +58,16 @@ python validate_outputs.py
 # 6. Generate the HTML report.
 python make_report.py --also-copy docs/report.html
 
-# 7. Run the Loughran-McDonald dictionary baseline and comparison.
+# 7. Run the Loughran-McDonald dictionary baseline.
 python sentiment_baseline.py outputs/events_sentiment.csv \
     -o outputs/events_sentiment_baseline.csv
+
+# 8. Run the FinBERT-tone neural baseline (first run downloads the
+#    yiyanghkust/finbert-tone model, ~440 MB, into HuggingFace cache).
+python sentiment_finbert.py outputs/events_sentiment.csv \
+    -o outputs/events_sentiment_finbert.csv
+
+# 9. Three-way comparison: LLM vs LM vs FinBERT.
 python sentiment_baseline_compare.py
 ```
 

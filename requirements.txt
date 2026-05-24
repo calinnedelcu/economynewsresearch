@@ -16,3 +16,12 @@ python-dotenv>=1.0
 
 # Loughran-McDonald dictionary baseline (sentiment_baseline.py)
 pysentiment2>=0.1.1
+
+# FinBERT-tone neural baseline (sentiment_finbert.py).
+# Install torch CPU build first to avoid pulling CUDA wheels on Windows:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch
+# transformers 4.x; transformers 5.x removed slow-tokenizer support
+# that yiyanghkust/finbert-tone still relies on.
+transformers>=4.40,<5.0
+torch>=2.0
+sentencepiece>=0.2.0

@@ -1,0 +1,93 @@
+# 1. Introduction
+
+Information enters financial markets through a heterogeneous network of
+public news services, professional terminals, broker desks, and, in the
+last decade, real-time social and chat-based aggregators that an
+increasing share of retail and small-shop traders monitor as their
+primary news feed. These newer channels carry the same headlines that
+appear on Bloomberg or Reuters but at a variable latency and with a
+publication timestamp that is not the timestamp of the underlying
+primary source. Whether and how prices react to the arrival of news on
+such channels-and whether the directional content of those headlines
+can be extracted in a useful way by modern language models-is a
+question with direct practical relevance to a large and growing audience
+of intraday traders, and a methodological question for the event-study
+literature that has historically focused either on scheduled macro
+releases [@andersen2003micro] or on slower-moving newspaper text
+[@tetlock2007giving; @loughran2011liability].
+
+This paper studies the relation between unscheduled news headlines from
+a representative real-time news service-the FinancialJuice Discord
+newsfeed-and intraday price reactions in the EUR/USD spot exchange
+rate and the Nasdaq-100 index, over a thirteen-month sample from
+24 March 2025 to 5 May 2026. The dataset comprises 2,449 hand-filtered
+"gold" news events drawn from 63,016 raw messages and aligned to
+one-minute price bars on both assets. Each event is independently
+labelled by a large language model with a discrete sentiment for USD
+and for NDX, an expected magnitude, a surprise level, and a
+self-reported confidence. We test fourteen pre-specified hypotheses
+covering volatility, direction, persistence, time-of-day, cross-asset
+behaviour, and pre-event drift, and we report the central findings
+with Benjamini-Hochberg false discovery rate adjustment
+[@benjamini1995controlling] applied uniformly across the full
+hypothesis battery.
+
+Three findings warrant emphasis. First, the news events are robustly
+associated with elevated intraday magnitude: the mean absolute return,
+the high-low range, and the maximum absolute intra-window move are
+between $1.3\times$ and $1.9\times$ their matched-baseline counterparts
+across all assets and windows tested, and the result is robust to
+winsorisation at the $1\%$ tails, to the introduction of multivariate
+controls for category, surprise, magnitude, confidence, cluster size,
+and pre-event drift, and to a pre/post split at the LLM's training
+data cutoff. The intra-window range and maximum-absolute-move
+statistics are, in fact, the strongest and most stable result in the
+analysis. Second, the directional content of LLM-derived sentiment is
+modest: direction hit rates range from $49\%$ to $54\%$ on the primary
+windows, with only a small number of cells surviving the FDR
+correction. A backtest with realistic spread and slippage costs
+confirms that this edge is too small to be economically exploitable in
+the naive forms tested. Third, the LLM sentiment nonetheless
+out-performs both the standard Loughran-McDonald finance dictionary
+[@loughran2011liability] and the FinBERT-tone neural classifier
+[@yang2020finbert] on direction hit rate by $2$-$6$ percentage
+points across the primary windows, and produces cross-asset
+disagreement (different sentiment for USD and for NDX on the same
+event) on $73.5\%$ of events-a property that neither single-polarity
+baseline can express by construction.
+
+We also report two methodologically substantive findings. The
+absolute return in the fifteen minutes preceding a Discord headline
+is elevated above the matched baseline by a similar magnitude as in
+the post-event window. Without primary-source timestamps we cannot
+distinguish whether this reflects information arrival latency in the
+public feed or genuine pre-disclosure activity, but the practical
+implication for users of the feed is the same: entering a trade at
+the timestamp of the public headline is, on average, already late.
+And the sign of the $+15$-minute return agrees with the sign of the
+$+4$-hour return on $57.6\%$ of events, with median absolute moves
+$3$-$4.5\times$ larger over the longer window, so the initial
+reaction tends to be extended rather than reversed.
+
+Our contribution is fourfold. We assemble a sizeable intraday
+event-study dataset on an actively-used public news feed and document
+its construction in enough detail to support replication. We propose
+an event-study workflow with matched-baseline standardisation,
+explicit cluster dependence handling, and uniform FDR adjustment as
+applied to a large battery of hypotheses. We compare an LLM-based
+sentiment classifier to two reference baselines-the Loughran-McDonald
+finance dictionary and the FinBERT-tone neural classifier-on
+identical event windows, providing direct quantitative support for
+the LLM methodology against both classical and BERT-era baselines.
+And we make the entire pipeline-including the validation harness,
+the LLM cache, the dictionary baseline, the FinBERT baseline, and
+the three-way comparison-public in a single repository with seeded
+reproducibility (see Reproducibility Statement).
+
+The remainder of the paper is organised as follows. Section 2 reviews
+the relevant literature on event studies, financial sentiment
+analysis, and online news. Section 3 describes the data. Section 4
+develops the methodology. Section 5 presents the results, grouped by
+theme. Section 6 discusses the implications. Section 7 details the
+limitations of the design and the directions for future work, and
+Section 8 concludes.

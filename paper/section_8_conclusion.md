@@ -1,0 +1,51 @@
+# 8. Conclusion
+
+We document the intraday price response of EUR/USD and the Nasdaq-100
+to a thirteen-month sample of $2{,}449$ unscheduled news events from a
+public real-time newsfeed, with each event independently labelled by
+a large language model and benchmarked against the standard
+Loughran-McDonald dictionary and the FinBERT-tone neural classifier.
+After uniform Benjamini-Hochberg false discovery rate adjustment, the
+news events are robustly associated with intraday magnitude that is
+$1.3\times$ to $1.9\times$ the matched-baseline level on every
+asset-window cell tested, and this finding is stable under
+winsorisation, multivariate controls, and a pre/post-knowledge-cutoff
+split. The directional content of the LLM sentiment is modest
+($49$-$54\%$ hit rate against realised direction) and below
+transaction costs in a backtest, but the LLM nonetheless outperforms
+the Loughran-McDonald baseline by $2$-$6$ percentage points and the
+FinBERT baseline by up to $4.5$ percentage points on the primary
+windows. The LLM is also the only one of the three classifiers
+capable of producing asset-specific sentiment (different USD and NDX
+labels on the same headline), which it does on $73.5\%$ of events.
+
+Two methodologically substantive findings sit alongside the main
+results. The pre-event drift in the fifteen minutes before each
+Discord headline is comparable in magnitude to the post-event
+drift, suggesting that the public publication time is not the
+informational event time in this setting; we recommend that future
+work on online-news event studies obtain primary-source timestamps
+where possible and report the pre-event drift as a diagnostic in any
+case. And the initial price reaction extends rather than reverses
+over the subsequent hours, with the sign of the $+15$-minute return
+agreeing with the sign of the $+4$-hour return on $57.6\%$ of events
+and median absolute moves $3$-$4.5\times$ larger over the longer
+window.
+
+Two practical implications follow. For research, an LLM-based
+sentiment classifier provides meaningful value over the standard
+dictionary and BERT-family baselines in this kind of analysis, both
+in hit rate and in the asset-specific expressiveness that
+single-output classifiers cannot match; the full validation of the
+LLM labels nonetheless requires manual annotation, which we are
+pursuing. For practitioners using this kind of feed, the magnitude
+signal is more useful than the directional signal: news events are
+most reliably understood as triggers for volatility expansion, with
+direction available only as a weak secondary input that does not
+overcome execution costs in the naive forms tested.
+
+We make the full pipeline-including the validation harness, the
+LLM sentiment cache, the dictionary and FinBERT baselines, and the
+three-way comparison-publicly available in a single repository
+with seeded reproducibility, in the hope that the methodology can be
+re-applied to other public newsfeeds and to a wider set of assets.

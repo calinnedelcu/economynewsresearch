@@ -68,21 +68,33 @@ short NDX windows ($53.9\%$ at 5 minutes with $q = 0.012$; $53.2\%$ at
 within sampling noise of $50\%$ at the short windows and improve only
 at 60 minutes.
 
-**LLM versus Loughran-McDonald dictionary baseline.** A side-by-side
-comparison of hit rates between the LLM-derived sentiment and the
+**LLM versus dictionary and neural baselines.** A side-by-side
+comparison of hit rates between the LLM-derived sentiment, the
 deterministic Loughran-McDonald dictionary
-[@loughran2011liability], computed on identical event windows,
-shows that the LLM outperforms the dictionary by $2$-$6$ percentage
-points on direction across the primary $5/15/60$-minute windows. On
-NDX short windows the dictionary in fact underperforms a coin flip
-(hit rate of $47.0$-$47.8\%$), reflecting the dictionary's
-tendency to map every politically-tinged headline to a negative tone
-that does not correspond to equity-index direction in the modern
-period. The LLM also produces cross-asset disagreement (sentiment_usd
-$\neq$ sentiment_ndx) on $73.5\%$ of events, capturing exactly the
-risk-on/risk-off asymmetry that a single-polarity dictionary cannot
-express. We treat this as the principal justification for the LLM
-methodology over the standard dictionary baseline.
+[@loughran2011liability], and the FinBERT-tone neural classifier
+[@yang2020finbert], all computed on identical event windows, shows
+that the LLM outperforms both baselines on the majority of the
+primary windows. Against Loughran-McDonald, the LLM advantage is
+$+0.6$ to $+5.5$ percentage points across the six primary $5/15/60$-minute
+cells. Against FinBERT, the LLM advantage is $-0.5$ to $+4.5$
+percentage points; the LLM beats FinBERT in five of six primary
+cells and is essentially tied in the sixth (NDX 15-minute, $-0.5$
+pp). On the NDX short windows the dictionary in fact underperforms a
+coin flip ($47.0\%$ to $47.8\%$), reflecting its tendency to map
+politically-tinged headlines to a uniformly negative tone that does
+not correspond to equity-index direction in the modern period.
+FinBERT classifies $73.1\%$ of events as neutral (versus $42.2\%$ for
+the LLM), reducing its effective directional sample size by roughly
+$55\%$ and contributing little incremental signal where it does
+commit to a direction.
+
+The LLM also produces cross-asset disagreement (sentiment_usd
+$\neq$ sentiment_ndx) on $73.5\%$ of events, a property that captures
+the risk-on/risk-off asymmetry of macro-news events and that neither
+the dictionary nor the single-output FinBERT classifier can express
+by construction. We treat this combination of higher hit rates and
+asset-specific direction as the principal justification for the LLM
+methodology over the standard baselines.
 
 **Backtest with transaction costs.** A separate backtest of seven
 naive sentiment-following strategies, all with realistic spread/slippage
