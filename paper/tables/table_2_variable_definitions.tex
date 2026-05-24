@@ -1,0 +1,36 @@
+\begin{table}[!htbp]
+\centering
+\caption{Variable definitions.}
+\label{tab:var-defs}
+\begin{threeparttable}
+\small
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+\textbf{Variable} & \textbf{Definition} & \textbf{Unit} \\
+\midrule
+$r^{\text{price}}_{i,a,W}$ & Close-to-close percentage return of asset $a$ over the $W$-minute post-event window starting at $\lceil t_i \rceil_{1\text{m}}$. & \% \\[2pt]
+$r^{\text{target}}_{i,a,W}$ & Target-aligned return. Equal to $r^{\text{price}}$ for NDX; equal to $-r^{\text{price}}$ for EUR/USD (USD proxy convention). & \% \\[2pt]
+$\text{range}_{i,a,W}$ & Intra-window high minus low, expressed as a percentage of the open price. & \% \\[2pt]
+$\text{maxabs}_{i,a,W}$ & Maximum of the absolute upward and downward intra-window excursions, as a percentage of open. & \% \\[2pt]
+$z_{i,a,W}$ & Standardised abnormal score: outcome minus matched-baseline mean, divided by matched-baseline standard deviation. & dimensionless \\[2pt]
+\texttt{sentiment\_usd} & LLM-derived discrete USD sentiment $\in$ \{bull, bear, neutral\}. & categorical \\[2pt]
+\texttt{sentiment\_ndx} & LLM-derived discrete NDX sentiment. Independent of \texttt{sentiment\_usd}. & categorical \\[2pt]
+\texttt{sentiment\_lm} & Loughran-McDonald dictionary sentiment thresholded at $|\text{polarity}| \geq 0.1$. & categorical \\[2pt]
+\texttt{sentiment\_finbert} & FinBERT-tone argmax label remapped to \{bull, bear, neutral\}. & categorical \\[2pt]
+\texttt{category} & Hand-coded event category from \{macro\_release, central\_bank, geopolitical, politics, energy, corporate, other\}. & categorical \\[2pt]
+\texttt{event\_cluster\_id} & Integer identifier grouping events separated by no more than 15 minutes. & integer \\[2pt]
+\texttt{event\_cluster\_size} & Number of headlines in the cluster containing event $i$. & integer \\[2pt]
+\texttt{is\_in\_closed\_period} & Boolean: event timestamp falls within a market-closed gap. Diverts to H4 instead of intraday windows. & boolean \\[2pt]
+$\mu^{\text{base}}_{a,W,h,d}$ & Matched-baseline mean for asset $a$, window $W$, hour-of-day $h$, day-of-week $d$, sampled from non-event windows with $\pm 60$-minute event exclusion buffer. & varies \\[2pt]
+$q$-value & Benjamini-Hochberg false discovery rate adjustment applied across the union of all reported $p$-values. & probability \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Variable conventions used throughout
+Sections~\ref{sec:methodology} and~\ref{sec:results}. All
+timestamps are UTC. Window lengths $W$ are in minutes; primary
+windows are $W \in \{5, 15, 60\}$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

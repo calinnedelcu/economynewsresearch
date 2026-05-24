@@ -1,0 +1,41 @@
+\begin{table}[!htbp]
+\centering
+\caption{Event-window magnitude versus matched baseline (H1 and C2).}
+\label{tab:h1-main}
+\begin{threeparttable}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{EUR/USD (USD proxy)} & \multicolumn{3}{c}{Nasdaq-100} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Window & 5m & 15m & 60m & 5m & 15m & 60m \\
+\midrule
+Mean $|r|$, event ($\%$) & 0.0324 & 0.0532 & 0.0993 & 0.0839 & 0.1441 & 0.2682 \\
+Mean $|r|$, baseline ($\%$) & 0.0184 & 0.0314 & 0.0630 & 0.0539 & 0.0920 & 0.1874 \\
+Ratio (event/baseline) & 1.76$\times$ & 1.69$\times$ & 1.58$\times$ & 1.56$\times$ & 1.57$\times$ & 1.43$\times$ \\
+$q$-value (MWU one-sided) & ${<}10^{-15}$ & ${<}10^{-15}$ & ${<}10^{-15}$ & ${<}10^{-15}$ & ${<}10^{-15}$ & ${<}10^{-15}$ \\
+\addlinespace
+\multicolumn{7}{l}{\textit{C2: intra-window range and maximum absolute move}} \\
+Range, event ($\%$) & 0.0621 & 0.1047 & 0.1995 & 0.1715 & 0.2921 & 0.5704 \\
+Range, baseline ($\%$) & 0.0352 & 0.0625 & 0.1263 & 0.1054 & 0.1843 & 0.3772 \\
+Ratio range & 1.76$\times$ & 1.68$\times$ & 1.58$\times$ & 1.63$\times$ & 1.59$\times$ & 1.51$\times$ \\
+Max abs move, event ($\%$) & 0.0499 & 0.0839 & 0.1577 & 0.1353 & 0.2308 & 0.4491 \\
+Ratio max abs move & 1.76$\times$ & 1.68$\times$ & 1.57$\times$ & 1.62$\times$ & 1.58$\times$ & 1.53$\times$ \\
+\addlinespace
+$N$ clusters (event) & 1,288 & 1,273 & 1,208 & 1,200 & 1,178 & 1,099 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Event-window absolute return $|r|$, intra-window
+high-low range, and maximum absolute intra-window move, all in percentage
+points. Baselines are drawn from non-event windows matched on asset,
+window length, hour-of-day, and day-of-week, with 30 draws per event.
+The $q$-value comes from a one-sided Mann-Whitney $U$ test against
+the baseline distribution, with Benjamini-Hochberg FDR adjustment
+applied across the full hypothesis battery. Cluster identifier groups
+events at a 15-minute gap. Welch $t$-test alternative reported in
+the Online Appendix.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

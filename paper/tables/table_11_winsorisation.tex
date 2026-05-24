@@ -1,0 +1,29 @@
+\begin{table}[!htbp]
+\centering
+\caption{Robustness to winsorisation at 1\% tails.}
+\label{tab:winsor}
+\begin{threeparttable}
+\small
+\begin{tabular}{lccccccc}
+\toprule
+ & & \multicolumn{2}{c}{Mean $|z|$} & \multicolumn{2}{c}{$q$-value ($t$-test)} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+Asset & Window & Raw & Winsor 1\% & Raw & Winsor 1\% & $N$ \\
+\midrule
+EUR/USD & +5m & 0.908 & 0.790 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,286 \\
+EUR/USD & +15m & 0.844 & 0.757 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,271 \\
+EUR/USD & +60m & 0.787 & 0.709 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,207 \\
+NDX & +5m & 0.599 & 0.549 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,198 \\
+NDX & +15m & 0.637 & 0.589 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,176 \\
+NDX & +60m & 0.571 & 0.527 & ${<}10^{-15}$ & ${<}10^{-15}$ & 1,097 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Mean of $|z|$ (standardised abnormal absolute
+return) in the raw and 1\%-winsorised samples, with corresponding
+$q$-values from a one-sided $t$-test against zero. Winsorisation
+is applied separately within each (asset, window) cell.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

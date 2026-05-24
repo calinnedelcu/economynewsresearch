@@ -1,0 +1,111 @@
+% =====================================================================
+% Main LaTeX source for the paper.
+%
+% Targeted at the Journal of Financial Markets (Elsevier). Compatible
+% draft format using the standard article class; switching to
+% elsarticle.cls for submission is a single-line change at the top.
+%
+% Build:
+%   pdflatex main
+%   bibtex   main
+%   pdflatex main
+%   pdflatex main
+%
+% Or with latexmk (recommended once installed):
+%   latexmk -pdf main
+% =====================================================================
+
+\documentclass[12pt, a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+  \geometry{margin=1in}
+\usepackage{setspace}
+  \onehalfspacing  % switch to \doublespacing for journal submission
+
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{siunitx}
+  \sisetup{table-number-alignment=center, group-minimum-digits=4}
+
+\usepackage{graphicx}
+\usepackage{caption}
+  \captionsetup[table]{position=top, skip=4pt}
+  \captionsetup[figure]{position=bottom, skip=4pt}
+\usepackage{subcaption}
+
+\usepackage{natbib}
+  \bibpunct{(}{)}{;}{a}{,}{,}  % Author (Year) style with semicolons
+  \setcitestyle{aysep={}}
+
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage[hidelinks, breaklinks=true]{hyperref}
+
+% ---------- Custom commands ----------
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\rpost}{r^{\text{post}}}
+\newcommand{\rpre}{r^{\text{pre}}}
+\newcommand{\rtarget}{r^{\text{target}}}
+\newcommand{\eurusd}{\textsc{eur/usd}}
+\newcommand{\ndx}{\textsc{ndx}}
+
+% ---------- Title block ----------
+\title{Unexpected Online Financial News and Intraday Market Reactions: \\
+       An Event-Study of \eurusd{} and Nasdaq-100 Prices}
+\author{
+  Andrei Calin Nedelcu\thanks{Corresponding author: \texttt{calin.nedelcu08@gmail.com}.}
+  \and
+  Andrei Cheroiu
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% ---------- Abstract ----------
+\input{sections/abstract.tex}
+
+\medskip
+\noindent\textbf{Keywords:} event study, intraday returns, sentiment analysis,
+large language models, financial dictionaries, news, EUR/USD, Nasdaq-100,
+false discovery rate.
+
+\medskip
+\noindent\textbf{JEL classification:} G14, G15, C58, C45.
+
+\clearpage
+
+% ---------- Body ----------
+\input{sections/section_1_introduction.tex}
+\input{sections/section_2_literature_review.tex}
+\input{sections/section_3_data.tex}
+\input{sections/section_4_methodology.tex}
+\input{sections/section_5_results.tex}
+\input{sections/section_6_discussion.tex}
+\input{sections/section_7_limitations.tex}
+\input{sections/section_8_conclusion.tex}
+
+% ---------- References ----------
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% ---------- Appendices ----------
+\appendix
+\input{sections/reproducibility.tex}
+
+\end{document}

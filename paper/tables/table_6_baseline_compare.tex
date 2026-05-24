@@ -1,0 +1,49 @@
+\begin{table}[!htbp]
+\centering
+\caption{Direction hit rate: LLM versus baselines.}
+\label{tab:baseline-compare}
+\begin{threeparttable}
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Asset} & \textbf{Source} & \textbf{Window} & \textbf{$N$} & \textbf{Hit rate} & \textbf{$q$-value} \\
+\midrule
+EUR/USD & LLM & +5m & 998 & 52.4\%$^{*}$ & 0.342 \\
+ & LM (dict.) & +5m & 764 & 51.8\% & 0.618 \\
+ & FinBERT & +5m & 437 & 51.9\% & 0.666 \\
+\addlinespace[2pt]
+ & LLM & +15m & 991 & 52.5\%$^{*}$ & 0.342 \\
+ & LM (dict.) & +15m & 758 & 50.4\% & 0.917 \\
+ & FinBERT & +15m & 434 & 48.8\% & 0.936 \\
+\addlinespace[2pt]
+ & LLM & +60m & 944 & 54.0\%$^{***}$ & 0.219 \\
+ & LM (dict.) & +60m & 728 & 49.6\% & 0.936 \\
+ & FinBERT & +60m & 417 & 51.3\% & 0.780 \\
+\addlinespace[2pt]
+\midrule
+NDX & LLM & +5m & 1,001 & 52.7\%$^{**}$ & 0.342 \\
+ & LM (dict.) & +5m & 726 & 47.2\% & 0.986 \\
+ & FinBERT & +5m & 417 & 48.2\% & 0.979 \\
+\addlinespace[2pt]
+ & LLM & +15m & 985 & 51.4\% & 0.666 \\
+ & LM (dict.) & +15m & 711 & 47.8\% & 0.986 \\
+ & FinBERT & +15m & 409 & 51.8\% & 0.667 \\
+\addlinespace[2pt]
+ & LLM & +60m & 918 & 49.6\% & 0.936 \\
+ & LM (dict.) & +60m & 668 & 47.0\% & 0.986 \\
+ & FinBERT & +60m & 388 & 46.6\% & 0.986 \\
+\addlinespace[2pt]
+\midrule
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Direction hit rate against the realised target
+direction (positive vs negative target return). $N$ counts directional
+events (excludes events the classifier labels neutral). Each row
+reports a one-sided binomial test against the null $p_0 = 0.5$;
+$q$-values from Benjamini-Hochberg FDR adjustment.
+$^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$ on raw $p$-values.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

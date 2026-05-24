@@ -1,0 +1,36 @@
+\begin{table}[!htbp]
+\centering
+\caption{Sentiment label distribution and pairwise classifier agreement.}
+\label{tab:sentiment-dist}
+\begin{threeparttable}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Classifier} & \textbf{Bull} & \textbf{Bear} & \textbf{Neutral} & \textbf{Total} \\
+\midrule
+LLM (USD) & 958 (39.1\%) & 845 (34.5\%) & 646 (26.4\%) & 2,449 \\
+LLM (NDX) & 817 (33.4\%) & 1,138 (46.5\%) & 494 (20.2\%) & 2,449 \\
+Loughran-McDonald & 226 (9.2\%) & 1,052 (43.0\%) & 1,171 (47.8\%) & 2,449 \\
+FinBERT-tone & 267 (10.9\%) & 393 (16.0\%) & 1,789 (73.1\%) & 2,449 \\
+\midrule
+\multicolumn{5}{l}{\textit{Pairwise label agreement on USD sentiment ($N$=2,449)}} \\
+\quad LLM USD vs LM & \multicolumn{4}{l}{33.0\%} \\
+\quad LLM USD vs FinBERT & \multicolumn{4}{l}{28.5\%} \\
+\quad LM vs FinBERT & \multicolumn{4}{l}{54.7\%} \\
+\midrule
+\multicolumn{5}{l}{\textit{Cross-asset disagreement (\texttt{sentiment\_usd} $\neq$ \texttt{sentiment\_ndx})}} \\
+\quad LLM & \multicolumn{4}{l}{73.5\%} \\
+\quad LM, FinBERT & \multicolumn{4}{l}{$0\%$ by construction (single-polarity classifiers)} \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Distribution of discrete sentiment labels
+across the full event sample for each classifier, with column
+percentages in parentheses. LM and FinBERT produce a single
+polarity per event and therefore cannot disagree across
+assets. Pairwise agreement reports the share of events on
+which the two classifiers assign the same USD label.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

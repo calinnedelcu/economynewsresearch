@@ -1,0 +1,15 @@
+# LaTeX build artifacts (regenerable)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Keep the compiled PDF and source .tex
+!main.pdf

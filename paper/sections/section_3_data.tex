@@ -1,0 +1,157 @@
+\section{Data}
+\label{sec:data}
+
+\subsection{News data}
+\label{ssec:news-data}
+
+We use the public newsfeed of the FinancialJuice Discord server,
+captured via DiscordChatExporter into a single JSON archive. The
+export covers the period from 24 March 2025 to 5 May 2026
+(approximately thirteen months) and contains 63{,}016 individual
+messages from the official \texttt{FinancialJuice} account. The feed
+is a real-time aggregation of macroeconomic releases, central bank
+communication, geopolitical headlines, political statements, energy
+market news, and corporate announcements, intended primarily for an
+audience of intraday traders. All timestamps are recorded by Discord
+at the moment the message is published and converted to UTC.
+
+To isolate market-relevant unscheduled events from routine data
+releases, we apply a deterministic ``gold'' filter: a message is
+gold if (i)~it is flagged with a red dot or begins with
+\textsc{breaking}, and (ii)~it is not flagged with the
+\texttt{\$MACRO} tag that the publisher attaches to scheduled macro
+indicator releases (CPI, NFP, PMI, etc.). The first condition selects
+headlines that the publisher itself considers high-impact; the second
+removes scheduled releases that would otherwise dominate the sample
+and whose timing carries no informational surprise. The filter
+retains 2{,}449 messages (3.9\% of the raw feed), which we treat as
+the working population of unscheduled news events.
+
+We assign each gold event to one of seven categories using
+deterministic keyword rules embedded in
+\texttt{parse\_fj\_discord.py}: \texttt{macro\_release} (residual
+data releases not caught by the \texttt{\$MACRO} tag),
+\texttt{central\_bank} (Federal Reserve, ECB, Bank of England, etc.),
+\texttt{geopolitical} (war, sanctions, diplomacy), \texttt{politics}
+(executive and legislative statements), \texttt{energy} (OPEC, oil
+inventories, gas), \texttt{corporate} (named firm news), and
+\texttt{other}. The category labels are used only for stratified
+hypothesis testing in later sections and play no role in event
+selection.
+
+\subsection{Sentiment labels}
+\label{ssec:sentiment-labels}
+
+Each gold event is independently labelled by a large language model
+with respect to its short-horizon directional implication for the
+U.S.~Dollar (USD) and the Nasdaq-100 Index (NDX). We use
+\texttt{deepseek-v4-flash} accessed via an OpenAI-compatible API
+endpoint. The system prompt (reproduced in the Online Appendix)
+restricts the model to a strict JSON schema with the following
+fields per event: a discrete USD sentiment in
+\{\texttt{bull}, \texttt{bear}, \texttt{neutral}\}, a discrete NDX
+sentiment in the same support, signed directional strengths in
+$[-1,+1]$ for each asset, an expected magnitude in
+\{\texttt{low}, \texttt{med}, \texttt{high}\}, a surprise level in
+\{\texttt{expected}, \texttt{surprise}, \texttt{shock}\}, a
+self-reported confidence in $[0,1]$, and a one-sentence rationale.
+The prompt explicitly instructs the model to (a)~base its judgment
+only on the supplied text, (b)~return \texttt{neutral} with low
+confidence when the message is ambiguous, and (c)~treat USD and NDX
+independently so that risk-off events can map to
+\texttt{bull USD, bear NDX} simultaneously. Five few-shot examples
+covering geopolitical, central bank, corporate, and neutral cases
+are included verbatim in the system prompt to anchor the output
+format. Calls are cached locally in SQLite, keyed on the hash of the
+model name, system prompt, and event content, so that re-runs during
+prompt iteration do not duplicate API costs.
+
+The LLM-derived labels are the primary sentiment input throughout
+the paper. In Section~\ref{ssec:results-direction} we benchmark them
+against a deterministic Loughran-McDonald dictionary baseline
+\citep{loughran2011liability} and against the FinBERT-tone neural
+classifier \citep{yang2020finbert}.
+
+\subsection{Price data}
+\label{ssec:price-data}
+
+We use one-minute open-high-low-close-volume (OHLCV) bars for two
+target assets from Dukascopy: the EUR/USD spot exchange rate and the
+\texttt{E\_NQ-100} Nasdaq-100 contract for difference (CFD). The
+CFD price track is used as a tradable proxy for the cash Nasdaq-100
+index in the absence of an authoritative consolidated tape at
+one-minute resolution. We acknowledge the proxy nature of this
+series in Section~\ref{sec:limitations} and discuss its implications
+for the reported volume tests.
+
+The price coverage spans 24 March 2025 to 5 May 2026, identical to
+the news coverage window. After de-duplication and gap detection,
+the EUR/USD panel contains 416{,}500 bars and the NDX panel contains
+381{,}122 bars; the difference reflects the venue's CFD market hours
+(no weekend trading, exchange holidays). Closed-period gaps are
+detected automatically and events that fall inside them are diverted
+to the closed-period gap test
+(Section~\ref{ssec:results-market-structure}) rather than to the
+main intraday windows. A reported volume series accompanies each
+bar; for the NDX CFD the series is best understood as tick volume
+rather than consolidated exchange volume, and any volume-based test
+must be interpreted accordingly.
+
+\subsection{Final analysis sample}
+\label{ssec:final-sample}
+
+The two coverage windows (news and prices) are identical, so the
+intersection used for the event study is also 24 March 2025 to
+5~May 2026, and no gold events are dropped for falling outside the
+price range. After cluster assignment at a 15-minute gap threshold,
+the 2{,}449 events organise into 1{,}405 distinct news clusters;
+the median cluster contains a single headline, but the largest
+contain dozens of related releases issued within minutes of each
+other (typically central bank decisions followed by press
+conferences, or geopolitical escalations followed by official
+reactions). Cluster identity is preserved throughout the analysis:
+non-regression tests use the first event per cluster as an
+independent observation, and regression standard errors are
+clustered on cluster identity.
+
+Generating one event-asset-window record for each combination of
+(event, asset in \{EUR/USD, NDX\}, window in
+\{1, 5, 15, 60, 240\} minutes) yields a panel of 24{,}490
+event-window rows. A parallel cluster-level panel constructed from
+the first timestamp of each cluster yields 14{,}050 rows. Both panels
+are written to the project repository (\texttt{event\_study\_windows.csv}
+and \texttt{cluster\_event\_study\_windows.csv}).
+Table~\ref{tab:sample-summary} reports the key sample quantities,
+Table~\ref{tab:var-defs} defines the variables used throughout the
+analysis, and Table~\ref{tab:desc-stats} provides descriptive
+statistics for the key event-level and window-level quantities.
+Figure~\ref{fig:event-timeline} plots the arrival rate of gold
+events by category over the sample period; the rate is fairly
+uniform across months, with central-bank and political news
+dominating the mix.
+
+\input{tables/table_1_sample_summary.tex}
+\input{tables/table_2_variable_definitions.tex}
+\input{tables/table_3_descriptive_stats.tex}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure_2_event_timeline.pdf}
+\caption{Daily arrival rate of gold news events by category, with
+the publisher's \texttt{\$MACRO} tag excluded. The horizontal axis
+spans the thirteen-month sample window. Stack ordering follows the
+overall category volume.}
+\label{fig:event-timeline}
+\end{figure}
+
+Table~\ref{tab:sentiment-dist} reports the distribution of the
+three sentiment classifiers (the LLM, the Loughran-McDonald
+dictionary, and FinBERT-tone) across the full event sample,
+together with pairwise label agreement. The three classifiers
+disagree substantially: pairwise USD agreement is below $40\%$ for
+every pair, and the LLM is the only one of the three that produces
+asset-specific labels (USD $\neq$ NDX on $73.5\%$ of events).
+Section~\ref{ssec:results-direction} translates these differences
+into direction hit rates against realised price moves.
+
+\input{tables/table_4_sentiment_distribution.tex}

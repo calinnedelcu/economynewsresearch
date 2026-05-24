@@ -1,0 +1,29 @@
+\begin{table}[!htbp]
+\centering
+\caption{Stability across LLM knowledge-cutoff split (15 January 2026).}
+\label{tab:pre-post}
+\begin{threeparttable}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{EUR/USD} & \multicolumn{3}{c}{NDX} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Period & 5m & 15m & 60m & 5m & 15m & 60m \\
+\midrule
+Pre-cutoff: mean $|z|_{\,|r|}$ & 0.982 & 0.895 & 0.899 & 0.644 & 0.680 & 0.638 \\
+Post-cutoff: mean $|z|_{\,|r|}$ & 0.736 & 0.726 & 0.521 & 0.495 & 0.535 & 0.411 \\
+Pre-cutoff: $q$ & $1.9\!\times\!10^{-15}$ & ${<}10^{-15}$ & ${<}10^{-15}$ & $1.7\!\times\!10^{-15}$ & $7.8\!\times\!10^{-15}$ & $2.4\!\times\!10^{-13}$ \\
+Post-cutoff: $q$ & $1.7\!\times\!10^{-10}$ & $3.9\!\times\!10^{-11}$ & $2.3\!\times\!10^{-8}$ & $1.2\!\times\!10^{-8}$ & $3.1\!\times\!10^{-11}$ & $5.7\!\times\!10^{-7}$ \\
+\addlinespace
+Pre-cutoff $N$ clusters & 901 & 891 & 849 & 839 & 827 & 774 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Standardised abnormal absolute return $|z|$
+in the pre-cutoff and post-cutoff halves, with the split at the LLM's
+reported training data cutoff of 15 January 2026. $q$-values from
+one-sided $t$-test against zero with BH-FDR adjustment.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

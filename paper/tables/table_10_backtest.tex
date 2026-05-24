@@ -1,0 +1,58 @@
+\begin{table}[!htbp]
+\centering
+\caption{Naive sentiment-following strategy backtest with and without transaction costs.}
+\label{tab:backtest}
+\begin{threeparttable}
+\footnotesize
+\begin{tabular}{lcrcccc}
+\toprule
+\textbf{Strategy} & \textbf{Asset} & \textbf{$N$ trades} & \textbf{Win \%} & \textbf{Tot.\,ret.\,(\%)} & \textbf{Profit factor} & \textbf{Max DD (\%)} \\
+\midrule
+\multicolumn{7}{l}{\textit{With realistic spread + slippage}} \\
+no\_chase\_filtered\_hold\_60m & eurusd & 721 & 44.8\% & -5.94 & 0.84 & -6.87 \\
+naive\_sentiment\_hold\_60m & eurusd & 1,002 & 46.0\% & -8.58 & 0.85 & -10.03 \\
+naive\_sentiment\_hold\_60m & ndx & 960 & 43.6\% & -9.38 & 0.93 & -19.66 \\
+naive\_sentiment\_hold\_15m & eurusd & 1,054 & 37.8\% & -11.88 & 0.67 & -12.28 \\
+fresh\_sentiment\_breakout\_60m & eurusd & 458 & 35.6\% & -6.71 & 0.35 & -6.76 \\
+no\_chase\_filtered\_hold\_15m & eurusd & 767 & 35.6\% & -11.34 & 0.54 & -11.42 \\
+fresh\_sentiment\_breakout\_15m & eurusd & 463 & 32.2\% & -6.94 & 0.29 & -6.99 \\
+volatility\_breakout\_15m & eurusd & 606 & 34.8\% & -9.63 & 0.30 & -9.64 \\
+eurusd\_usd\_1m\_confirmed\_15m & eurusd & 268 & 20.9\% & -4.46 & 0.17 & -4.45 \\
+naive\_sentiment\_hold\_15m & ndx & 1,030 & 39.7\% & -19.75 & 0.77 & -22.44 \\
+no\_chase\_filtered\_hold\_60m & ndx & 705 & 41.6\% & -16.97 & 0.81 & -21.42 \\
+no\_chase\_filtered\_hold\_15m & ndx & 756 & 36.0\% & -20.00 & 0.64 & -22.83 \\
+ndx\_cluster\_followthrough\_60m & ndx & 327 & 40.7\% & -8.72 & 0.64 & -10.40 \\
+volatility\_breakout\_15m & ndx & 626 & 37.7\% & -21.04 & 0.37 & -21.03 \\
+fresh\_sentiment\_breakout\_15m & ndx & 453 & 34.0\% & -17.55 & 0.31 & -17.50 \\
+fresh\_sentiment\_breakout\_60m & ndx & 424 & 37.3\% & -16.55 & 0.36 & -16.54 \\
+\addlinespace
+\multicolumn{7}{l}{\textit{Without transaction costs (frictionless)}} \\
+no\_chase\_filtered\_hold\_60m & eurusd & 721 & 52.8\% & 5.60 & 1.18 & -2.89 \\
+naive\_sentiment\_hold\_60m & eurusd & 1,002 & 52.6\% & 7.45 & 1.15 & -5.19 \\
+naive\_sentiment\_hold\_60m & ndx & 960 & 50.7\% & 29.03 & 1.25 & -10.06 \\
+naive\_sentiment\_hold\_15m & eurusd & 1,054 & 50.8\% & 4.98 & 1.19 & -2.81 \\
+fresh\_sentiment\_breakout\_60m & eurusd & 458 & 48.3\% & 0.62 & 1.10 & -0.86 \\
+no\_chase\_filtered\_hold\_15m & eurusd & 767 & 49.9\% & 0.94 & 1.05 & -3.15 \\
+fresh\_sentiment\_breakout\_15m & eurusd & 463 & 48.6\% & 0.47 & 1.09 & -0.80 \\
+volatility\_breakout\_15m & eurusd & 606 & 49.3\% & 0.07 & 1.01 & -1.19 \\
+eurusd\_usd\_1m\_confirmed\_15m & eurusd & 268 & 44.0\% & -0.17 & 0.94 & -0.54 \\
+naive\_sentiment\_hold\_15m & ndx & 1,030 & 53.2\% & 21.46 & 1.33 & -7.38 \\
+no\_chase\_filtered\_hold\_60m & ndx & 705 & 50.1\% & 11.23 & 1.15 & -5.98 \\
+no\_chase\_filtered\_hold\_15m & ndx & 756 & 51.7\% & 10.24 & 1.27 & -3.93 \\
+ndx\_cluster\_followthrough\_60m & ndx & 327 & 44.6\% & 4.36 & 1.26 & -2.30 \\
+volatility\_breakout\_15m & ndx & 626 & 55.6\% & 4.00 & 1.20 & -1.35 \\
+fresh\_sentiment\_breakout\_15m & ndx & 453 & 50.1\% & 0.58 & 1.04 & -1.27 \\
+fresh\_sentiment\_breakout\_60m & ndx & 424 & 50.2\% & 0.41 & 1.02 & -1.47 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Seven naive sentiment-following strategies
+applied to each event, traded with EUR/USD spot or NDX CFD prices.
+Costs include venue-typical spread and slippage. Total return is
+the simple sum across trades, in percentage points. Profit factor
+is gross profit divided by gross loss; values below 1.0 indicate
+a losing strategy.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

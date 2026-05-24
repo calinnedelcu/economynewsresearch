@@ -1,0 +1,36 @@
+\begin{table}[!htbp]
+\centering
+\caption{Descriptive statistics for key variables.}
+\label{tab:desc-stats}
+\begin{threeparttable}
+\small
+\begin{tabular}{lcrrrrrrr}
+\toprule
+\textbf{Variable} & \textbf{Unit} & \textbf{$N$} & \textbf{Mean} & \textbf{SD} & \textbf{Min} & \textbf{p25} & \textbf{Median} & \textbf{p75} \\
+\midrule
+\texttt{directional\_strength\_usd} & [-1, +1] & 2,449 & 0.0425 & 0.4180 & -0.8500 & -0.3000 & 0.0000 & 0.4000 \\
+\texttt{directional\_strength\_ndx} & [-1, +1] & 2,449 & -0.0869 & 0.4751 & -0.9000 & -0.5000 & -0.0500 & 0.4000 \\
+\texttt{confidence} & [0, 1] & 2,449 & 0.5949 & 0.1699 & 0.1000 & 0.5000 & 0.6500 & 0.7000 \\
+$|r|$ eurusd +5m & \% & 2,259 & 0.0390 & 0.0558 & 0.0000 & 0.0105 & 0.0241 & 0.0474 \\
+range eurusd +5m & \% & 2,259 & 0.0760 & 0.0751 & 0.0018 & 0.0352 & 0.0554 & 0.0908 \\
+$|r|$ eurusd +15m & \% & 2,231 & 0.0651 & 0.0788 & 0.0000 & 0.0172 & 0.0410 & 0.0854 \\
+range eurusd +15m & \% & 2,231 & 0.1280 & 0.1113 & 0.0085 & 0.0622 & 0.0952 & 0.1545 \\
+$|r|$ eurusd +60m & \% & 2,126 & 0.1173 & 0.1304 & 0.0000 & 0.0356 & 0.0784 & 0.1522 \\
+range eurusd +60m & \% & 2,126 & 0.2333 & 0.1742 & 0.0267 & 0.1213 & 0.1843 & 0.2838 \\
+$|r|$ ndx +5m & \% & 2,105 & 0.1081 & 0.1872 & 0.0000 & 0.0254 & 0.0582 & 0.1244 \\
+range ndx +5m & \% & 2,105 & 0.2107 & 0.2581 & 0.0194 & 0.0866 & 0.1419 & 0.2408 \\
+$|r|$ ndx +15m & \% & 2,073 & 0.1730 & 0.2955 & 0.0001 & 0.0392 & 0.0980 & 0.2042 \\
+range ndx +15m & \% & 2,073 & 0.3560 & 0.4349 & 0.0329 & 0.1500 & 0.2455 & 0.4123 \\
+$|r|$ ndx +60m & \% & 1,951 & 0.3301 & 0.4247 & 0.0002 & 0.0861 & 0.2028 & 0.4022 \\
+range ndx +60m & \% & 1,951 & 0.6780 & 0.7037 & 0.0813 & 0.3151 & 0.4937 & 0.7993 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Descriptive statistics for the LLM-derived
+event-level features (top rows) and for the event-window
+absolute return and intra-window range at the primary 5/15/60-minute
+horizons (lower rows). $N$ counts non-missing observations.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

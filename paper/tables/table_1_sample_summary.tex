@@ -1,0 +1,42 @@
+\begin{table}[!htbp]
+\centering
+\caption{Sample summary.}
+\label{tab:sample-summary}
+\begin{threeparttable}
+\begin{tabular}{lr}
+\toprule
+\textbf{Quantity} & \textbf{Value} \\
+\midrule
+News coverage (UTC)                              & 24 Mar 2025 -- 5 May 2026 \\
+Raw Discord messages parsed                      & 63{,}016 \\
+Gold events after filter                         & 2{,}449 \\
+Gold rate (gold / raw)                           & 3.9\% \\
+Events dropped (outside common price range)      & 0 \\
+News clusters at 15-minute gap                   & 1{,}405 \\
+Median cluster size (events)                     & 1 \\
+Event-window panel rows                          & 24{,}490 \\
+Cluster-window panel rows                        & 14{,}050 \\
+\addlinespace
+EUR/USD 1-minute bars                            & 416{,}500 \\
+EUR/USD coverage                                 & 24 Mar 2025 -- 5 May 2026 \\
+Nasdaq-100 CFD 1-minute bars                     & 381{,}122 \\
+Nasdaq-100 CFD coverage                          & 24 Mar 2025 -- 5 May 2026 \\
+\addlinespace
+LLM sentiment model                              & \texttt{deepseek-v4-flash} \\
+Dictionary baseline                              & Loughran-McDonald (2011) \\
+Neural baseline                                  & FinBERT-tone (Yang et al., 2020) \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Sample drawn from the FinancialJuice Discord
+newsfeed and aligned to Dukascopy 1-minute OHLCV bars for both
+target assets. Gold filter: red-dot or \textsc{breaking} flag and
+not tagged \texttt{\$MACRO}. Cluster identifier groups events
+separated by no more than 15 minutes. Forward window lengths used
+throughout: 1, 5, 15, 60, 240 minutes; primary windows reported in
+Section~\ref{sec:results} are 5, 15, and 60 minutes. All
+timestamps are UTC.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

@@ -1,0 +1,59 @@
+\begin{table}[!htbp]
+\centering
+\caption{Multivariate regression of standardised abnormal magnitude.}
+\label{tab:multivariate}
+\begin{threeparttable}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{EUR/USD ($|z|$)} & \multicolumn{2}{c}{NDX ($|z|$)} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Term & +5m & +60m & +5m & +60m \\
+\midrule
+$\log(\text{cluster size})$ & $1.925$$^{**}$ & $1.522$$^{***}$ & $1.057$$^{***}$ & $0.593$$^{*}$ \\
+ & $(0.751)$ & $(0.413)$ & $(0.367)$ & $(0.323)$ \\
+\addlinespace[2pt]
+Pre-event $|r|_{15}$ & $8.516$$^{***}$ & $3.954$$^{***}$ & $3.529$$^{***}$ & $2.386$$^{**}$ \\
+ & $(2.480)$ & $(1.337)$ & $(0.954)$ & $(0.956)$ \\
+\addlinespace[2pt]
+Surprise level & $-0.010$ & $-0.239$ & $0.139$ & $-0.228$ \\
+ & $(0.259)$ & $(0.194)$ & $(0.140)$ & $(0.167)$ \\
+\addlinespace[2pt]
+Expected magnitude & $0.366$ & $0.377$$^{*}$ & $-0.081$ & $0.257$ \\
+ & $(0.241)$ & $(0.206)$ & $(0.153)$ & $(0.199)$ \\
+\addlinespace[2pt]
+LLM confidence & $-0.031$ & $-0.004$ & $0.001$ & $0.814$ \\
+ & $(0.862)$ & $(0.829)$ & $(0.687)$ & $(1.028)$ \\
+\addlinespace[2pt]
+Headline length & $-0.001$ & $0.001$ & $-0.001$$^{*}$ & $-0.001$$^{*}$ \\
+ & $(0.001)$ & $(0.001)$ & $(0.000)$ & $(0.000)$ \\
+\addlinespace[2pt]
+Cat: central bank & -- & -- & -- & -- \\
+ &  &  &  &  \\
+\addlinespace[2pt]
+Cat: geopolitical & $-0.744$$^{**}$ & $-0.393$$^{*}$ & $-0.104$ & $-0.157$ \\
+ & $(0.299)$ & $(0.213)$ & $(0.169)$ & $(0.199)$ \\
+\addlinespace[2pt]
+Cat: corporate & $-0.876$$^{*}$ & $-0.631$$^{*}$ & $-0.262$ & $0.029$ \\
+ & $(0.447)$ & $(0.332)$ & $(0.249)$ & $(0.345)$ \\
+\addlinespace[2pt]
+Cat: energy & $-0.952$$^{***}$ & $-0.124$ & $-0.189$ & $-0.399$ \\
+ & $(0.290)$ & $(0.316)$ & $(0.190)$ & $(0.248)$ \\
+\addlinespace[2pt]
+\midrule
+$R^2$ & 0.122 & 0.097 & 0.193 & 0.096 \\
+$N$ clusters & 1,279 & 1,202 & 1,188 & 1,088 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} OLS of the standardised abnormal $|z|$ on the
+listed regressors. Coefficient on top, robust standard error in
+parentheses below; cluster-robust covariance with the 15-minute
+news-cluster identifier as the grouping variable.
+$^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$ on raw $p$-values;
+$q$-values reported in the Online Appendix. Category baseline:
+\texttt{politics}.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
