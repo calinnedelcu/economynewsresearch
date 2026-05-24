@@ -13,3 +13,6 @@ matplotlib>=3.8
 # Sentiment classification
 openai>=2.0
 python-dotenv>=1.0
+
+# Loughran-McDonald dictionary baseline (sentiment_baseline.py)
+pysentiment2>=0.1.1
