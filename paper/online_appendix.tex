@@ -1,0 +1,106 @@
+% =====================================================================
+% Online Appendix companion document for the main paper.
+%
+% Compile separately (does not include main paper sections).
+% Build:
+%   pdflatex online_appendix
+%   bibtex   online_appendix
+%   pdflatex online_appendix
+%   pdflatex online_appendix
+% =====================================================================
+
+\documentclass[12pt, a4paper]{article}
+
+% ---------- Packages (same preamble as main.tex) ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+  \geometry{margin=1in}
+\setlength{\emergencystretch}{3em}
+\hfuzz=2pt
+\usepackage{setspace}
+  \onehalfspacing
+
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{siunitx}
+  \sisetup{table-number-alignment=center, group-minimum-digits=4}
+
+\usepackage{graphicx}
+\usepackage{caption}
+  \captionsetup[table]{position=top, skip=4pt}
+  \captionsetup[figure]{position=bottom, skip=4pt}
+\usepackage{subcaption}
+
+\usepackage{natbib}
+  \bibpunct{(}{)}{;}{a}{,}{,}
+  \setcitestyle{aysep={}}
+
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage[hidelinks, breaklinks=true]{hyperref}
+\usepackage{xr-hyper}
+  % Pull labels from main.aux so \ref{} works across documents
+  \externaldocument{main}
+
+% Custom commands (must match main.tex)
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\rpost}{r^{\text{post}}}
+\newcommand{\rpre}{r^{\text{pre}}}
+\newcommand{\rtarget}{r^{\text{target}}}
+\newcommand{\eurusd}{\textsc{eur/usd}}
+\newcommand{\ndx}{\textsc{ndx}}
+\newcommand{\susd}{S^{\mathrm{USD}}_i}
+\newcommand{\sndx}{S^{\mathrm{NDX}}_i}
+\newcommand{\slm}{S^{\mathrm{LM}}_i}
+\newcommand{\sfb}{S^{\mathrm{FinBERT}}_i}
+
+% Renumber sections as A, B, C, ... so they don't clash with the main paper
+\renewcommand{\thesection}{\Alph{section}}
+\renewcommand{\thesubsection}{\Alph{section}.\arabic{subsection}}
+\renewcommand{\thetable}{OA\arabic{table}}
+\renewcommand{\thefigure}{OA\arabic{figure}}
+\renewcommand{\theequation}{OA\arabic{equation}}
+
+% ---------- Title block ----------
+\title{Online Appendix for: \\
+       Unexpected Online Financial News and Intraday Market Reactions: \\
+       An Event-Study of \eurusd{} and Nasdaq-100 Prices}
+\author{
+  Andrei Calin Nedelcu\thanks{Corresponding author: \texttt{calin.nedelcu08@gmail.com}.}
+  \and
+  Andrei Cheroiu
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\noindent\textit{This document collects auxiliary tables and material
+referenced in the main paper but not included in the main text.
+Section and table numbering follows the OA prefix and is independent
+of the main paper. Bibliographic references follow the same
+convention; the bibliography file is shared between this Online
+Appendix and the main paper.}
+
+\bigskip
+
+\input{sections/online_appendix.tex}
+
+% ---------- References ----------
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
