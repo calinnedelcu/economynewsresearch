@@ -77,7 +77,7 @@ Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
 
 Interpretarea non-tehnica pentru traderi este in:
 
-- `docs/Interpretare_traderi.md`
+- `trader/Interpretare.md`
 
 ## Structura proiect
 
