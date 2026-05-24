@@ -24,6 +24,9 @@
 \usepackage{microtype}
 \usepackage{geometry}
   \geometry{margin=1in}
+% Tighter tolerance on overfull hboxes (small overflows allowed silently)
+\setlength{\emergencystretch}{3em}
+\hfuzz=2pt
 \usepackage{setspace}
   \onehalfspacing  % switch to \doublespacing for journal submission
 
@@ -42,6 +45,11 @@
   \captionsetup[table]{position=top, skip=4pt}
   \captionsetup[figure]{position=bottom, skip=4pt}
 \usepackage{subcaption}
+\usepackage[section]{placeins}  % \FloatBarrier at each section
+  \makeatletter
+  % Also at subsection level
+  \AddToHook{cmd/subsection/before}{\FloatBarrier}
+  \makeatother
 
 \usepackage{natbib}
   \bibpunct{(}{)}{;}{a}{,}{,}  % Author (Year) style with semicolons
@@ -61,14 +69,19 @@
 \newcommand{\rtarget}{r^{\text{target}}}
 \newcommand{\eurusd}{\textsc{eur/usd}}
 \newcommand{\ndx}{\textsc{ndx}}
+% Sentiment variable shortcuts (math notation)
+\newcommand{\susd}{S^{\mathrm{USD}}_i}
+\newcommand{\sndx}{S^{\mathrm{NDX}}_i}
+\newcommand{\slm}{S^{\mathrm{LM}}_i}
+\newcommand{\sfb}{S^{\mathrm{FinBERT}}_i}
 
 % ---------- Title block ----------
 \title{Unexpected Online Financial News and Intraday Market Reactions: \\
        An Event-Study of \eurusd{} and Nasdaq-100 Prices}
 \author{
-  Andrei Calin Nedelcu\thanks{Corresponding author: \texttt{calin.nedelcu08@gmail.com}.}
+  Andrei Calin Nedelcu\thanks{Corresponding author: \texttt{calin.nedelcu08@gmail.com}. Affiliation: [TBA].}
   \and
-  Andrei Cheroiu
+  Andrei Cheroiu\thanks{Affiliation: [TBA]. Email: [TBA].}
 }
 \date{\today}
 
@@ -85,19 +98,25 @@ large language models, financial dictionaries, news, EUR/USD, Nasdaq-100,
 false discovery rate.
 
 \medskip
-\noindent\textbf{JEL classification:} G14, G15, C58, C45.
+\noindent\textbf{JEL classification:} G14, G17, C45, C58.
 
 \clearpage
 
 % ---------- Body ----------
 \input{sections/section_1_introduction.tex}
 \input{sections/section_2_literature_review.tex}
+\input{sections/section_2b_hypothesis_development.tex}
 \input{sections/section_3_data.tex}
 \input{sections/section_4_methodology.tex}
 \input{sections/section_5_results.tex}
 \input{sections/section_6_discussion.tex}
 \input{sections/section_7_limitations.tex}
 \input{sections/section_8_conclusion.tex}
+
+% ---------- Acknowledgments + Data Availability (before References) ----------
+\clearpage
+\input{sections/acknowledgments.tex}
+\input{sections/data_availability.tex}
 
 % ---------- References ----------
 \clearpage
@@ -107,5 +126,6 @@ false discovery rate.
 % ---------- Appendices ----------
 \appendix
 \input{sections/reproducibility.tex}
+\input{sections/online_appendix.tex}
 
 \end{document}

@@ -1,0 +1,39 @@
+\begin{table}[!htbp]
+\centering
+\caption{Magnitude by sentiment label (subsample analysis).}
+\label{tab:subsample-magnitude}
+\begin{threeparttable}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Asset & Window & Sentiment & $N$ & Mean $|r|$ (\%) & Median $|r|$ (\%) \\
+\midrule
+EUR/USD & +5m & bull & 557 & 0.0333 & 0.0207 \\
+EUR/USD & +5m & bear & 464 & 0.0330 & 0.0207 \\
+EUR/USD & +5m & neutral & 384 & 0.0306 & 0.0188 \\
+EUR/USD & +15m & bull & 557 & 0.0547 & 0.0346 \\
+EUR/USD & +15m & bear & 464 & 0.0527 & 0.0360 \\
+EUR/USD & +15m & neutral & 384 & 0.0518 & 0.0311 \\
+EUR/USD & +60m & bull & 557 & 0.1006 & 0.0677 \\
+EUR/USD & +60m & bear & 464 & 0.1025 & 0.0714 \\
+EUR/USD & +60m & neutral & 384 & 0.0935 & 0.0630 \\
+NDX & +5m & bull & 475 & 0.0816 & 0.0506 \\
+NDX & +5m & bear & 649 & 0.0923 & 0.0554 \\
+NDX & +5m & neutral & 281 & 0.0700 & 0.0458 \\
+NDX & +15m & bull & 475 & 0.1409 & 0.0933 \\
+NDX & +15m & bear & 649 & 0.1471 & 0.0931 \\
+NDX & +15m & neutral & 281 & 0.1430 & 0.0866 \\
+NDX & +60m & bull & 475 & 0.2619 & 0.1606 \\
+NDX & +60m & bear & 649 & 0.2806 & 0.1745 \\
+NDX & +60m & neutral & 281 & 0.2539 & 0.1751 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} Event-window absolute return $|r|$ stratified
+by LLM sentiment label. The magnitude effect is broadly symmetric
+across bull, bear, and neutral subsamples; the small differences
+do not motivate a separate H12-style asymmetry claim.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

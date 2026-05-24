@@ -1,0 +1,78 @@
+\section{Online Appendix: Robustness Tables}
+\label{app:online}
+
+This appendix collects auxiliary tables referenced in the main body.
+All quantities are computed from the same pipeline and seed
+documented in Section~\ref{app:reproducibility}.
+
+\subsection{Cluster-gap-threshold robustness for H1}
+\label{app:cluster-gap}
+
+Section~\ref{ssec:clustering} treats the 15-minute cluster-gap
+threshold as a design parameter and notes that the central H1 result
+is insensitive to the choice within the range 5--30 minutes.
+Table~\ref{tab:cluster-gap-robustness} reports the H1 event/baseline
+magnitude ratio for the four thresholds. The ratio is monotone in
+the threshold (tighter thresholds retain more independent clusters
+and yield slightly higher ratios), but remains above $1.0$ in every
+cell, the central conclusion in Section~\ref{ssec:results-volatility}.
+
+\input{tables/table_A1_cluster_gap_robustness.tex}
+
+\subsection{Subsample analysis by LLM sentiment label}
+\label{app:subsample}
+
+The bull-versus-bear asymmetry test (H12) reported as null in
+Section~\ref{sec:limitations} aggregates over all events.
+Tables~\ref{tab:subsample-magnitude} and~\ref{tab:subsample-direction}
+report the magnitude and direction results stratified by the LLM
+sentiment label (bull, bear, neutral). The magnitude effect is
+broadly symmetric across the three subsamples and confirms the H12
+null finding at a more granular level. The direction hit rate by
+sentiment label shows one notable cell: EUR/USD events labelled
+bull achieve a $57.3\%$ hit rate at the $+60$-minute window
+($p = 0.0007$ on a one-sided binomial); the corresponding bear
+subsample is not statistically distinguishable from chance. We
+report this observation as exploratory; it does not feature in the
+main results because the same conclusion would not hold under a
+stricter joint-testing correction across the eighteen subsample
+cells reported here.
+
+\input{tables/table_A2_subsample_magnitude.tex}
+\input{tables/table_A3_subsample_direction.tex}
+
+\subsection{LLM prompt full text}
+\label{app:llm-prompt}
+
+The production LLM call uses the system prompt below. The
+benchmark-adapted prompt for Financial PhraseBank
+(Section~\ref{ssec:sentiment-validation}) is identical to this
+prompt up to the schema (positive/negative/neutral in place of the
+USD/NDX bull/bear/neutral fields) and the omission of the asset-
+specific instruction.
+
+\begin{quote}\small
+\texttt{You are a financial sentiment analyst. Classify how a news
+event likely affects the US Dollar (USD) and the Nasdaq-100 index
+(NDX) in the very short term (minutes to hours after publication).
+Output STRICTLY a single JSON object with this exact schema:
+sentiment\_usd $\in$ \{bull, bear, neutral\}, sentiment\_ndx in
+the same support, signed directional\_strength\_usd and
+directional\_strength\_ndx in $[-1, +1]$, expected\_magnitude in
+\{low, med, high\}, surprise\_level in \{expected, surprise,
+shock\}, confidence in $[0, 1]$, and a short rationale.}
+
+\smallskip
+
+\texttt{Rules: base judgment strictly on the supplied text; do not
+invent context; if ambiguous or off-topic, return neutral with
+low confidence (\textless 0.4); USD and NDX are different assets
+and their sentiments can differ (e.g., risk-off events: bull USD,
+bear NDX); directional\_strength values respect sentiment direction;
+return ONLY the JSON object, no preamble.}
+\end{quote}
+
+\noindent
+Five few-shot examples covering geopolitical escalation, dovish Fed
+signal, hawkish ECB signal, neutral aid announcement, and corporate
+earnings miss anchor the format.

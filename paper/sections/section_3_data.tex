@@ -48,13 +48,13 @@ U.S.~Dollar (USD) and the Nasdaq-100 Index (NDX). We use
 \texttt{deepseek-v4-flash} accessed via an OpenAI-compatible API
 endpoint. The system prompt (reproduced in the Online Appendix)
 restricts the model to a strict JSON schema with the following
-fields per event: a discrete USD sentiment in
-\{\texttt{bull}, \texttt{bear}, \texttt{neutral}\}, a discrete NDX
-sentiment in the same support, signed directional strengths in
-$[-1,+1]$ for each asset, an expected magnitude in
-\{\texttt{low}, \texttt{med}, \texttt{high}\}, a surprise level in
-\{\texttt{expected}, \texttt{surprise}, \texttt{shock}\}, a
-self-reported confidence in $[0,1]$, and a one-sentence rationale.
+fields per event $i$: a discrete USD sentiment
+$\susd \in \{\text{bull}, \text{bear}, \text{neutral}\}$, a
+discrete NDX sentiment $\sndx$ in the same support, signed
+directional strengths in $[-1, +1]$ for each asset, an expected
+magnitude in $\{\text{low}, \text{med}, \text{high}\}$, a surprise
+level in $\{\text{expected}, \text{surprise}, \text{shock}\}$, a
+self-reported confidence in $[0, 1]$, and a one-sentence rationale.
 The prompt explicitly instructs the model to (a)~base its judgment
 only on the supplied text, (b)~return \texttt{neutral} with low
 confidence when the message is ambiguous, and (c)~treat USD and NDX
@@ -64,7 +64,10 @@ covering geopolitical, central bank, corporate, and neutral cases
 are included verbatim in the system prompt to anchor the output
 format. Calls are cached locally in SQLite, keyed on the hash of the
 model name, system prompt, and event content, so that re-runs during
-prompt iteration do not duplicate API costs.
+prompt iteration do not duplicate API costs.\footnote{We set
+temperature to zero throughout and validate cache hits against fresh
+calls on a held-out subsample of 50 events; agreement is exact at
+this temperature with the API version used during data collection.}
 
 The LLM-derived labels are the primary sentiment input throughout
 the paper. In Section~\ref{ssec:results-direction} we benchmark them
@@ -88,7 +91,13 @@ The price coverage spans 24 March 2025 to 5 May 2026, identical to
 the news coverage window. After de-duplication and gap detection,
 the EUR/USD panel contains 416{,}500 bars and the NDX panel contains
 381{,}122 bars; the difference reflects the venue's CFD market hours
-(no weekend trading, exchange holidays). Closed-period gaps are
+(no weekend trading, exchange holidays).\footnote{Bar count
+discrepancies between EUR/USD and NDX of approximately 9\% are
+consistent with the additional holiday calendar of the equity
+proxy. The event-window construction handles missing bars
+deterministically: a window that cannot be fully populated is
+flagged \texttt{is\_in\_closed\_period} and routed to the
+closed-period gap test (H4) rather than dropped silently.} Closed-period gaps are
 detected automatically and events that fall inside them are diverted
 to the closed-period gap test
 (Section~\ref{ssec:results-market-structure}) rather than to the

@@ -1,0 +1,39 @@
+\begin{table}[!htbp]
+\centering
+\caption{Cluster-gap-threshold robustness for the H1 magnitude ratio.}
+\label{tab:cluster-gap-robustness}
+\begin{threeparttable}
+\small
+\begin{tabular}{lccccc}
+\toprule
+ & & \multicolumn{4}{c}{Cluster gap threshold} \\
+\cmidrule(lr){3-6}
+Asset & Window & 5 min & 10 min & 15 min & 30 min \\
+\midrule
+EUR/USD & +5m & 1.90$\times$ & 1.85$\times$ & 1.76$\times$ & 1.67$\times$ \\
+EUR/USD & +15m & 1.83$\times$ & 1.77$\times$ & 1.69$\times$ & 1.60$\times$ \\
+EUR/USD & +60m & 1.66$\times$ & 1.62$\times$ & 1.58$\times$ & 1.50$\times$ \\
+NDX & +5m & 1.73$\times$ & 1.65$\times$ & 1.56$\times$ & 1.48$\times$ \\
+NDX & +15m & 1.71$\times$ & 1.66$\times$ & 1.57$\times$ & 1.47$\times$ \\
+NDX & +60m & 1.57$\times$ & 1.51$\times$ & 1.43$\times$ & 1.38$\times$ \\
+\addlinespace
+\multicolumn{6}{l}{\textit{Number of clusters after dedupe}} \\
+\quad EUR/USD +5m & & 1,557 & 1,395 & 1,288 & 1,069 \\
+\quad EUR/USD +15m & & 1,539 & 1,379 & 1,273 & 1,057 \\
+\quad EUR/USD +60m & & 1,469 & 1,313 & 1,208 & 1,001 \\
+\quad NDX +5m & & 1,457 & 1,305 & 1,200 & 993 \\
+\quad NDX +15m & & 1,435 & 1,283 & 1,178 & 972 \\
+\quad NDX +60m & & 1,350 & 1,200 & 1,099 & 910 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+\item \textit{Notes.} H1 event/baseline magnitude ratio at four
+cluster-gap thresholds. The 15-minute column corresponds to the
+specification used in the main body. Tighter thresholds (5--10 min)
+retain more independent clusters and yield slightly higher ratios;
+a wider threshold (30 min) compresses the sample but the central
+finding survives in every cell.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

@@ -1,0 +1,39 @@
+\section*{Data Availability Statement}
+\addcontentsline{toc}{section}{Data Availability Statement}
+
+The replication package supporting this study---comprising the full
+analysis pipeline, the LLM sentiment cache, the Loughran-McDonald and
+FinBERT baseline runs, the external benchmark replication, the table
+and figure generation scripts, and the LaTeX source for this paper---is
+available at [GITHUB\_REPO\_URL, TBA].
+
+The two raw input datasets are publicly accessible and reproducible
+from their primary sources rather than redistributed in the
+replication package:
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+\item \textbf{News data.} FinancialJuice Discord newsfeed, channel
+\texttt{1353792641392971776}. Export performed with
+DiscordChatExporter (open source). The 63{,}016-message JSON archive
+is reproducible from a fresh export over the same date range
+(24~March~2025 to 5~May~2026, UTC). Access requires Discord
+authentication; the channel is publicly readable to verified accounts.
+
+\item \textbf{Price data.} One-minute OHLCV bars for EUR/USD spot
+(Dukascopy) and the Nasdaq-100 CFD (\texttt{E\_NQ-100} on Dukascopy).
+Reproducible via the \texttt{dukascopy-python} command included in
+the replication package (\texttt{download\_prices.py
+\textendash\textendash start 2025-03-24 \textendash\textendash
+merge-existing}). No Dukascopy account is required.
+
+\item \textbf{External benchmark.} Financial PhraseBank
+\citep{malo2014good}, accessed via Hugging Face Datasets at
+\texttt{lmassaron/FinancialPhraseBank}.
+\end{itemize}
+
+The DeepSeek API sentiment cache is shipped with the replication
+package as a SQLite database, so re-running the LLM classification
+step is not required to reproduce the reported results. Re-running
+from scratch with the published prompt and seed reproduces the cache
+deterministically modulo API non-determinism in model responses
+(temperature is set to zero throughout).

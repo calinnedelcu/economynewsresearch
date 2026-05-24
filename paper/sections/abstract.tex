@@ -1,32 +1,23 @@
 \begin{abstract}
 \noindent
-We study the intraday response of \eurusd{} and the Nasdaq-100 index to
-2{,}449 unscheduled news events from a public real-time newsfeed
-(FinancialJuice Discord) over a thirteen-month sample from
-24 March 2025 to 5 May 2026, with each event independently labelled
-by a large language model (\texttt{deepseek-v4-flash}) and benchmarked
-against the Loughran-McDonald finance dictionary and the FinBERT-tone
-neural classifier. Using a matched, hour-of-day and day-of-week
-stratified baseline, with cluster-robust standard errors and uniform
-Benjamini-Hochberg false discovery rate adjustment, we find that news
-events are robustly associated with intraday magnitude that is
+We study the intraday response of \eurusd{} and the Nasdaq-100 index
+to 2{,}449 unscheduled news events from a public real-time newsfeed
+over a thirteen-month sample. Each event is independently labelled by
+a large language model and benchmarked against the Loughran-McDonald
+dictionary and FinBERT-tone. Using a matched, hour-of-day and
+day-of-week stratified baseline with cluster-robust standard errors
+and uniform Benjamini-Hochberg false discovery rate adjustment, we
+find that news events are associated with intraday magnitude
 $1.3\times$ to $1.9\times$ the baseline level on every asset-window
-cell, and that the intra-window range and maximum absolute move are
-the most stable single results. The directional content of LLM
-sentiment is modest (49--54\% hit rate) and below transaction costs
-in a backtest, but the LLM outperforms both baselines by 2--6
-percentage points on the primary windows and is the only classifier
-that produces asset-specific sentiment, doing so on 73.5\% of events.
-On the Financial PhraseBank external benchmark, the LLM achieves
-84.6\% accuracy and Cohen's $\kappa = 0.72$ against gold human
-labels, outperforming FinBERT by 5.4 percentage points and the
-Loughran-McDonald dictionary by 27.2 percentage points.
-The pre-event absolute return is comparable in magnitude to the
-post-event return, indicating that the Discord publication time is
-not the underlying informational event time and that entry at the
-headline timestamp is, on average, already late. The initial price
-reaction extends rather than reverses over the subsequent hours. The
-full pipeline, including the LLM cache, the dictionary and FinBERT
-baselines, the matched-baseline construction, and the validation
-harness, is released as a single seeded reproducible repository.
+cell. The directional content of LLM sentiment is modest (49--54\%
+hit rate) and below transaction costs in a backtest, but the LLM
+outperforms both baselines on direction by 2--6 percentage points and
+produces asset-specific sentiment on 73.5\% of events. On the
+Financial PhraseBank external benchmark, the LLM attains 84.6\%
+accuracy and Cohen's $\kappa = 0.72$ against gold human labels,
+outperforming FinBERT by 5.4 percentage points. The pre-event
+absolute return matches the post-event return in magnitude,
+indicating that the public headline timestamp is not the
+informational event time. The full pipeline is released with seeded
+reproducibility.
 \end{abstract}

@@ -43,8 +43,8 @@ winsorisation at the $1\%$ tails, to the introduction of multivariate
 controls for category, surprise, magnitude, confidence, cluster size,
 and pre-event drift, and to a pre/post split at the LLM's training
 data cutoff. The intra-window range and maximum-absolute-move
-statistics are, in fact, the strongest and most stable result in the
-analysis. Second, the directional content of LLM-derived sentiment
+statistics are particularly robust, with $q$-values below
+$10^{-30}$ on every cell. Second, the directional content of LLM-derived sentiment
 is modest: direction hit rates range from $49\%$ to $54\%$ on the
 primary windows, with only a small number of cells surviving the FDR
 correction. A backtest with realistic spread and slippage costs

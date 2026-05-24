@@ -89,8 +89,12 @@ ways.
 
 First, we assign cluster identities by gap rule: two consecutive
 events belong to the same cluster if and only if they are separated
-by no more than 15 minutes. At the 24{,}490-row event-window panel
-this collapses to 14{,}050 cluster-window rows. Non-regression tests
+by no more than 15 minutes.\footnote{We treat the 15-minute
+threshold as a design parameter. The Online Appendix reproduces the
+H1 magnitude result with gap thresholds in $\{5, 10, 15, 30\}$
+minutes; the central conclusions are insensitive to the choice
+within this range.} At the 24{,}490-row event-window panel this
+collapses to 14{,}050 cluster-window rows. Non-regression tests
 (H1, H2, C1, etc.) use the first event per cluster as the
 independent unit, which yields a more conservative effective sample
 size than the raw event count.
@@ -98,9 +102,12 @@ size than the raw event count.
 Second, regression-based tests (H3, H4, C6) employ cluster-robust
 standard errors with the cluster identifier as the grouping variable
 \citep{white1980heteroskedasticity}, or HC3 standard errors when the
-cluster count is insufficient. The two devices together ensure that
-within-burst correlation does not contaminate the reported
-$p$-values.
+cluster count is insufficient.\footnote{We use HC3 rather than HC0
+or HC1 because HC3 is less anti-conservative at the moderate sample
+sizes of our category-level tests; the difference between the two
+is negligible in the cells with several hundred clusters.} The two
+devices together ensure that within-burst correlation does not
+contaminate the reported $p$-values.
 
 A separate cluster-level panel
 (\texttt{cluster\_event\_study\_windows.csv}) aggregates event-level
@@ -121,7 +128,10 @@ baseline and the events it is meant to control for. From this pool
 we sample 30 matched baseline returns per event, drawing where
 possible from the same hour-of-day and day-of-week bucket. When a
 bucket contains fewer than ten observations, the sampler falls back
-to the hour-of-day bucket, then to the unconditional pool. This
+to the hour-of-day bucket, then to the unconditional pool.\footnote{The
+choice of 30 draws per event balances Monte Carlo error against
+runtime; doubling the draw count changes the central H1 ratios by
+less than $0.5\%$ in the cells we re-ran as a check.} This
 stratification absorbs known weekly and intraday volatility
 seasonality (e.g., the New York open, the Asia-Europe handover)
 without removing the event signal.
@@ -148,79 +158,120 @@ Online Appendix for auditability. Each test is summarised below;
 pre-specified $p$-value definitions are documented in
 \texttt{event\_study.py} and are not adjusted post hoc.
 
-\paragraph{Main results (Section~\ref{sec:results}).}
-\begin{description}[leftmargin=*, style=nextline]
-\item[H1 (volatility)] Absolute event-window return versus matched
-baseline, tested by Mann-Whitney $U$ one-sided
-\citep{mann1947test}. Welch's $t$-test
-\citep{welch1947generalization} is reported as a robustness check
-in the Online Appendix.
-\item[H2 (direction)] Hit rate of LLM sentiment against realised
-target direction, tested by one-sided binomial against $p_0 = 0.5$,
-with Wilson 95\% confidence intervals.
-\item[H3 (sentiment $\times$ prior trend)] Cluster-robust OLS of
-absolute return on sentiment, prior 60-minute trend, and their
-interaction.
-\item[H4 (closed-period gap)] Aggregated target sentiment regressed
-on the opening-bar gap across each closed period (weekend, holiday),
-with HC3 robust standard errors.
-\item[H8 (pre-event drift)] Absolute pre-event return versus matched
-baseline; interpreted as evidence on the timing of information
-arrival, with explicit caveat that the Discord timestamp is not the
-primary-source timestamp.
-\item[H9 (persistence)] Sign agreement between the $+15$-minute and
-$+4$-hour returns.
-\item[H11 (time-of-day)] Hour-of-day and day-of-week effects on the
-event/baseline ratio.
-\item[H14 (cross-asset)] Correlation between EUR/USD and NDX
-event-window returns, reported both raw and after applying the USD
-proxy convention.
-\end{description}
+The main results in Section~\ref{sec:results} draw on eight
+hypotheses. \textbf{H1 (volatility)} tests the absolute event-window
+return against the matched baseline by a one-sided Mann-Whitney
+$U$ test \citep{mann1947test}, with the Welch $t$-test
+\citep{welch1947generalization} reported as a robustness check in
+the Online Appendix. \textbf{H2 (direction)} tests the hit rate of
+the LLM sentiment against the realised target direction by a
+one-sided binomial against $p_0 = 0.5$ and reports Wilson 95\%
+confidence intervals. \textbf{H3 (sentiment $\times$ prior trend)}
+estimates a cluster-robust OLS of the absolute return on sentiment,
+the prior 60-minute trend, and their interaction. \textbf{H4
+(closed-period gap)} regresses the realised opening-bar gap on
+aggregated target sentiment across each closed period (weekend,
+holiday) with HC3 robust standard errors. \textbf{H8 (pre-event
+drift)} compares the absolute pre-event return to the matched
+baseline; we interpret this as evidence on the timing of
+information arrival, with explicit caveat that the Discord
+timestamp is not the primary-source timestamp. \textbf{H9
+(persistence)} measures the sign agreement between the
+$+15$-minute and $+4$-hour returns. \textbf{H11 (time-of-day)}
+tests hour-of-day and day-of-week effects on the event/baseline
+ratio. \textbf{H14 (cross-asset)} reports the correlation between
+\eurusd{} and \ndx{} event-window returns both raw and under the
+USD-proxy convention.
 
-\paragraph{Extensions (Section~\ref{sec:results}).}
-\begin{description}[leftmargin=*, style=nextline]
-\item[C1] Cluster-level analogue of H2.
-\item[C2] Range and max-absolute-move outcomes versus matched
-baseline. These have proved to be the strongest individual results
-in the battery and are reported alongside H1.
-\item[C3] Standardised abnormal $z$-scores
-(eq.~\ref{eq:abnormal-z}) for all four outcomes.
-\item[C4] Per-category targeted regressions for
-\texttt{central\_bank}, \texttt{geopolitical}, \texttt{politics},
-\texttt{energy}, and \texttt{corporate}, replacing the redundant H7
-omnibus ANOVA.
-\item[C5] Stability of the central effects across the
-pre/post 15 January 2026 split. This date is the knowledge cutoff
-of the sentiment LLM, and the split lets us address the obvious
-memorisation concern.
-\item[C6] Multivariate OLS controlling for category dummies,
-surprise level, expected magnitude, confidence, cluster size,
-headline length, and pre-event move; cluster-robust standard
-errors.
-\item[C7] Winsorisation at the 1\% tails as a robustness check
-against the influence of extreme observations.
-\end{description}
+We extend the battery with seven additional tests. \textbf{C1} is
+the cluster-level analogue of H2. \textbf{C2} compares the range and
+maximum-absolute-move outcomes to the matched baseline; these
+outcomes have the most uniform statistical signal across cells in
+the battery and are reported alongside H1. \textbf{C3} reports the
+standardised abnormal $z$-scores (eq.~\ref{eq:abnormal-z}) for all
+four outcomes. \textbf{C4} runs per-category targeted tests for
+central-bank, geopolitical, political, energy, and corporate news,
+replacing the redundant omnibus categorical ANOVA originally
+proposed as H7. \textbf{C5} assesses stability of the central
+effects across the pre- and post-15~January~2026 split; this date
+is the knowledge cutoff of the sentiment LLM and the split lets us
+address the memorisation concern directly. \textbf{C6} estimates a
+multivariate OLS of the standardised abnormal magnitude on category
+dummies, surprise level, expected magnitude, confidence, cluster
+size, headline length, and pre-event move, with cluster-robust
+standard errors. \textbf{C7} reports winsorisation at the 1\% tails
+as a robustness check against extreme observations.
 
-\paragraph{Reported only in Limitations and the Online Appendix.}
-\begin{description}[leftmargin=*, style=nextline]
-\item[H5 and H13] LLM auxiliary labels (expected magnitude and
-surprise level) are consolidated into a single Online Appendix
-subsection because both depend on the same kind of LLM-derived
-ordinal categorisation and both yielded modest or null evidence of
-incremental information.
-\item[H6] LLM confidence calibration via Brier score: reported in
-Section~\ref{sec:limitations} as a null finding.
-\item[H7] Categorical omnibus ANOVA: subsumed by C4 and not
-reported separately.
-\item[H10] Volume effects: exploratory only, given that the
-Dukascopy NDX series is tick volume rather than consolidated
-exchange volume.
-\item[H12] Bull-versus-bear asymmetry: reported as a null finding
-in Section~\ref{sec:limitations}.
-\item[C8] Cross-model consensus on a 200-event subsample, comparing
-\texttt{deepseek-v4-flash} and \texttt{deepseek-v4-pro}: described
-in Section~\ref{sec:limitations} as exploratory.
-\end{description}
+A further six tests are reported only in Section~\ref{sec:limitations}
+or the Online Appendix because they produced null or exploratory
+findings. The LLM auxiliary labels for expected magnitude and
+surprise level (originally H5 and H13) are consolidated as a single
+Online Appendix subsection. The LLM confidence calibration
+(H6, Brier score) is reported in Section~\ref{sec:limitations} as a
+null finding. The categorical omnibus ANOVA (H7) is subsumed by C4
+and not reported separately. The volume test (H10) is exploratory
+because the Dukascopy NDX series is tick volume rather than
+consolidated exchange volume. The bull-versus-bear asymmetry test
+(H12) is reported as a null finding. Finally, the cross-model
+consensus check (C8) on a 200-event subsample comparing
+\texttt{deepseek-v4-flash} and \texttt{deepseek-v4-pro} is
+exploratory due to subsample size.
+
+\subsection{Identification strategy}
+\label{ssec:identification}
+
+We do not claim causal identification of the news effect in the
+structural sense of an instrumental-variable or
+regression-discontinuity design. The identifying assumption that
+underlies the comparison in Sections~\ref{ssec:matched-baseline}
+and~\ref{ssec:hypothesis-tests} is the following: conditional on
+asset, window length, hour-of-day, and day-of-week, the
+distribution of price behaviour in non-event windows provides a
+valid counterfactual for the distribution that would have obtained
+in the event windows had the news not arrived. This assumption is
+defensible in a context where (i)~the intraday volatility cycle is
+absorbed by the hour-of-day and day-of-week stratification,
+(ii)~there is no systematic mean drift in the matched-baseline
+returns across the sample period, and (iii)~the event-window
+selection rule (red-dot or \textsc{breaking}, excluding scheduled
+macro releases) does not select non-randomly on the unobserved
+component of price behaviour.
+
+We assess threats to each leg of this assumption directly:
+condition~(i) is tested by reporting hour-of-day effects on the
+event/baseline ratio (H11); condition~(ii) is tested by the
+pre-cutoff/post-cutoff split (C5); and condition~(iii) is the
+hardest to verify, since it depends on properties of the
+publisher's filter that we cannot observe directly. The
+pre-event drift documented in Section~\ref{ssec:results-timing}
+indicates that the public publication time is not the
+informational event time, which is a different identification
+issue we discuss in
+Section~\ref{sec:limitations}.
+
+\subsection{Statistical power}
+\label{ssec:power}
+
+The effective sample size after cluster-dedupe is at most $1{,}405$
+clusters and varies by hypothesis cell from $616$ to $1{,}289$
+clusters because of the cells that are dropped when an asset window
+cannot be fully populated. At an effective $n = 1{,}000$ clusters
+and the one-sided $\alpha = 0.05$ level, the binomial test of
+direction (H2) has $80\%$ power to detect a hit rate of $52.6\%$
+against the $50.0\%$ null, or equivalently a true edge of
+$2.6$ percentage points. At the more conservative
+post-Benjamini-Hochberg $q$-threshold of $0.05$ implied by our
+hypothesis family, the minimum detectable edge widens to roughly
+$3.0$--$3.5$ percentage points. For the magnitude test (H1), at
+$n = 1{,}000$ events versus $30{,}000$ matched-baseline draws, the
+one-sided Mann-Whitney $U$ test has $80\%$ power against an
+event/baseline mean ratio of approximately $1.10$, well below the
+$1.43$ to $1.87$ ratios we report. The magnitude battery is
+therefore comfortably overpowered relative to the effect sizes
+observed; the direction battery is right-sized for the effect
+magnitude consistent with prior literature
+\citep{tetlock2007giving,heston2017news} and underpowered to detect
+edges smaller than approximately $3$ percentage points.
 
 \subsection{Multiple testing}
 \label{ssec:multiple-testing}

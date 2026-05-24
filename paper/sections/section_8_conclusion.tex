@@ -34,17 +34,16 @@ $+15$-minute return agreeing with the sign of the $+4$-hour return
 on $57.6\%$ of events and median absolute moves $3$--$4.5\times$
 larger over the longer window.
 
-Two practical implications follow. For research, an LLM-based
-sentiment classifier provides meaningful value over the standard
-dictionary and BERT-family baselines in this kind of analysis,
-both in hit rate and in the asset-specific expressiveness that
-single-output classifiers cannot match; the full validation of the
-LLM labels nonetheless requires manual annotation, which we are
-pursuing. For practitioners using this kind of feed, the magnitude
-signal is more useful than the directional signal: news events are
-most reliably understood as triggers for volatility expansion, with
-direction available only as a weak secondary input that does not
-overcome execution costs in the naive forms tested.
+Two implications follow. For empirical work in this area, an
+LLM-based sentiment classifier provides meaningful value over the
+standard dictionary and BERT-family baselines, both in hit rate and
+in the asset-specific expressiveness that single-output classifiers
+cannot match. For the operational interpretation of the news-flow,
+the magnitude signal is more reliable than the directional signal:
+news events are most defensibly understood as triggers for
+volatility expansion, with direction available only as a weak
+secondary input that does not overcome execution costs in the
+naive specifications tested here.
 
 We make the full pipeline---including the validation harness, the
 LLM sentiment cache, the dictionary and FinBERT baselines, and the

@@ -1,0 +1,114 @@
+\section{Hypothesis development}
+\label{sec:hypotheses}
+
+The empirical analysis tests eight pre-specified main hypotheses
+(H1--H14, restricted to the eight with non-trivial findings) and
+seven post-specification extensions (C1--C7). This section motivates
+the eight main hypotheses from theory and prior evidence; the full
+list with formal test specifications appears in
+Section~\ref{ssec:hypothesis-tests}.
+
+\subsection{Magnitude response (H1)}
+
+Under semi-strong market efficiency \citep{fama1970efficient}, the
+arrival of an unscheduled informational event should produce a
+price revision that is detectable in the conditional second moment
+of returns even when its conditional mean is small or sign-ambiguous.
+\citet{andersen2003micro} demonstrate this directly for scheduled
+macro announcements in high-frequency FX, and
+\citet{calomiris2019news} document analogous volatility effects for
+unscheduled news in equity markets cross-country. We hypothesise
+that, on intraday windows from one to two hundred and forty
+minutes, the absolute event-window return exceeds the absolute
+matched-baseline return after controlling for hour-of-day and
+day-of-week seasonality. This is H1.
+
+\subsection{Directional content of sentiment labels (H2)}
+
+The textual-analysis tradition since \citet{tetlock2007giving}
+documents that sentiment extracted from news text predicts future
+returns, though the directional signal is small in absolute terms.
+\citet{heston2017news} report that neural sentiment classifiers
+extract richer directional content than dictionary classifiers
+\citep{loughran2011liability}, particularly for negative news. We
+hypothesise that the discrete bull/bear LLM sentiment predicts the
+realised target direction at hit rates above 50\%, with effect sizes
+in the single-digit percentage points consistent with prior
+literature. This is H2.
+
+\subsection{Sentiment-trend interaction (H3)}
+
+The classical reversal literature \citep{tetlock2007giving} suggests
+that the directional content of sentiment depends on prior price
+behaviour: bullish news following a price drop produces a larger
+upward revision than bullish news following a price run-up, because
+the latter has been at least partially priced in. We hypothesise
+that the interaction between LLM sentiment and the prior 60-minute
+trend is a significant predictor of the absolute event-window
+return, controlling for the sentiment and trend main effects. This
+is H3.
+
+\subsection{Closed-period gap (H4)}
+
+When markets are closed (weekends, holidays), news that arrives
+during the closure should be impounded into the opening price
+discontinuously rather than continuously. The cumulative target
+sentiment across the closure should therefore predict the realised
+opening-bar gap, in line with \citet{fama1970efficient} and standard
+event-study results on overnight returns. This is H4.
+
+\subsection{Pre-event drift and information arrival timing (H8)}
+
+The textual-analysis literature typically assumes that the public
+publication time of a news headline coincides with the
+informational event time, which is appropriate for
+machine-readable wire feeds with millisecond timestamps. For
+real-time chat-aggregated public feeds, the latency between the
+primary source and the public publication is variable and can be
+substantial. We hypothesise that the absolute return in the
+fifteen-minute window preceding the public timestamp exceeds the
+matched baseline at a magnitude comparable to the post-event drift,
+consistent with primary-source latency rather than with insider
+trading or systematic front-running. This is H8.
+
+\subsection{Persistence (H9)}
+
+If the news effect represents a permanent re-pricing rather than a
+transient liquidity shock, the sign of the short-horizon return
+should agree with the sign of the longer-horizon return at a rate
+above 50\%. The classical asset-pricing literature
+\citep{fama1970efficient,mackinlay1997event} does not distinguish
+these mechanisms at intraday frequencies. We hypothesise that the
+sign of the $+15$-minute target return agrees with the sign of the
+$+4$-hour target return at a rate above $50\%$, with the magnitude
+of the longer-horizon return larger than the magnitude of the
+shorter-horizon return. This is H9.
+
+\subsection{Time-of-day heterogeneity (H11)}
+
+Intraday volatility is strongly heterogeneous across the trading
+day, with established peaks around major exchange openings and
+macro-release windows \citep{andersen2003micro}. The event/baseline
+magnitude ratio should reflect this heterogeneity if our
+matched-baseline construction succeeds at absorbing the
+intraday cycle. We hypothesise that hour-of-day effects on the
+event/baseline ratio are statistically detectable for at least one
+of the two target assets. This is H11.
+
+\subsection{Cross-asset relation (H14)}
+
+Macro-news events typically affect USD and equity markets through
+correlated risk-on/risk-off mechanisms. \citet{andersen2003micro}
+document positive correlation between USD strength and S\&P 500
+returns conditional on macro news. We hypothesise that, under the
+USD-proxy convention, the event-window USD return and the
+event-window NDX return are positively correlated. This is H14.
+
+\subsection{Summary}
+
+The eight main hypotheses cover the four dimensions on which an
+event-study of unscheduled online news should provide evidence:
+magnitude (H1), direction (H2 and H3), timing (H4, H8, H9), and
+cross-sectional structure (H11, H14). The remaining tests in the
+pipeline (H5--H7, H10, H12--H13 and C1--C8) are auxiliary or
+robustness extensions, motivated below where they are reported.

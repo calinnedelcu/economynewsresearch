@@ -725,6 +725,142 @@ def table_11_winsorisation():
     write_table("table_11_winsorisation", "\n".join(body) + "\n")
 
 
+def table_A1_cluster_gap_robustness():
+    path = OUTPUTS / "cluster_gap_robustness.csv"
+    if not path.exists():
+        print("  skipping TA1: cluster_gap_robustness.csv not found")
+        return
+    df = pd.read_csv(path)
+
+    body = []
+    body.append(r"\begin{table}[!htbp]")
+    body.append(r"\centering")
+    body.append(r"\caption{Cluster-gap-threshold robustness for the H1 magnitude ratio.}")
+    body.append(r"\label{tab:cluster-gap-robustness}")
+    body.append(r"\begin{threeparttable}")
+    body.append(r"\small")
+    body.append(r"\begin{tabular}{lccccc}")
+    body.append(r"\toprule")
+    body.append(r" & & \multicolumn{4}{c}{Cluster gap threshold} \\")
+    body.append(r"\cmidrule(lr){3-6}")
+    body.append(r"Asset & Window & 5 min & 10 min & 15 min & 30 min \\")
+    body.append(r"\midrule")
+    for asset in ["eurusd", "ndx"]:
+        asset_label = "EUR/USD" if asset == "eurusd" else "NDX"
+        for w in PRIMARY_WINDOWS:
+            cells = []
+            for gap in [5, 10, 15, 30]:
+                r = df[(df["asset"] == asset) & (df["window_min"] == w) & (df["gap_min"] == gap)]
+                if r.empty:
+                    cells.append("--")
+                else:
+                    cells.append(f"{r.iloc[0]['ratio']:.2f}$\\times$")
+            body.append(f"{asset_label} & +{w}m & " + " & ".join(cells) + r" \\")
+    body.append(r"\addlinespace")
+    body.append(r"\multicolumn{6}{l}{\textit{Number of clusters after dedupe}} \\")
+    for asset in ["eurusd", "ndx"]:
+        asset_label = "EUR/USD" if asset == "eurusd" else "NDX"
+        for w in PRIMARY_WINDOWS:
+            cells = []
+            for gap in [5, 10, 15, 30]:
+                r = df[(df["asset"] == asset) & (df["window_min"] == w) & (df["gap_min"] == gap)]
+                if r.empty:
+                    cells.append("--")
+                else:
+                    cells.append(fmt_int(r.iloc[0]['n_clusters']))
+            body.append(f"\\quad {asset_label} +{w}m & & " + " & ".join(cells) + r" \\")
+    body.append(r"\bottomrule")
+    body.append(r"\end{tabular}")
+    body.append(r"\begin{tablenotes}")
+    body.append(r"\footnotesize")
+    body.append(r"\item \textit{Notes.} H1 event/baseline magnitude ratio at four")
+    body.append(r"cluster-gap thresholds. The 15-minute column corresponds to the")
+    body.append(r"specification used in the main body. Tighter thresholds (5--10 min)")
+    body.append(r"retain more independent clusters and yield slightly higher ratios;")
+    body.append(r"a wider threshold (30 min) compresses the sample but the central")
+    body.append(r"finding survives in every cell.")
+    body.append(r"\end{tablenotes}")
+    body.append(r"\end{threeparttable}")
+    body.append(r"\end{table}")
+    write_table("table_A1_cluster_gap_robustness", "\n".join(body) + "\n")
+
+
+def table_A2_subsample_magnitude():
+    path = OUTPUTS / "sentiment_subsample_magnitude.csv"
+    if not path.exists():
+        print("  skipping TA2: sentiment_subsample_magnitude.csv not found")
+        return
+    df = pd.read_csv(path)
+    body = []
+    body.append(r"\begin{table}[!htbp]")
+    body.append(r"\centering")
+    body.append(r"\caption{Magnitude by sentiment label (subsample analysis).}")
+    body.append(r"\label{tab:subsample-magnitude}")
+    body.append(r"\begin{threeparttable}")
+    body.append(r"\small")
+    body.append(r"\begin{tabular}{lccccc}")
+    body.append(r"\toprule")
+    body.append(r"Asset & Window & Sentiment & $N$ & Mean $|r|$ (\%) & Median $|r|$ (\%) \\")
+    body.append(r"\midrule")
+    for _, r in df.iterrows():
+        asset_label = "EUR/USD" if r["asset"] == "eurusd" else "NDX"
+        body.append(f"{asset_label} & +{int(r['window_min'])}m & "
+                    f"{r['sentiment']} & {fmt_int(r['n_clusters'])} & "
+                    f"{fmt_num(r['mean_abs_event'], 4)} & {fmt_num(r['median_abs_event'], 4)} \\\\")
+    body.append(r"\bottomrule")
+    body.append(r"\end{tabular}")
+    body.append(r"\begin{tablenotes}")
+    body.append(r"\footnotesize")
+    body.append(r"\item \textit{Notes.} Event-window absolute return $|r|$ stratified")
+    body.append(r"by LLM sentiment label. The magnitude effect is broadly symmetric")
+    body.append(r"across bull, bear, and neutral subsamples; the small differences")
+    body.append(r"do not motivate a separate H12-style asymmetry claim.")
+    body.append(r"\end{tablenotes}")
+    body.append(r"\end{threeparttable}")
+    body.append(r"\end{table}")
+    write_table("table_A2_subsample_magnitude", "\n".join(body) + "\n")
+
+
+def table_A3_subsample_direction():
+    path = OUTPUTS / "sentiment_subsample_direction.csv"
+    if not path.exists():
+        print("  skipping TA3: sentiment_subsample_direction.csv not found")
+        return
+    df = pd.read_csv(path)
+    body = []
+    body.append(r"\begin{table}[!htbp]")
+    body.append(r"\centering")
+    body.append(r"\caption{Direction hit rate by LLM sentiment label.}")
+    body.append(r"\label{tab:subsample-direction}")
+    body.append(r"\begin{threeparttable}")
+    body.append(r"\small")
+    body.append(r"\begin{tabular}{lcccccc}")
+    body.append(r"\toprule")
+    body.append(r"Asset & Window & Sentiment & $N$ & Hit rate & CI95 & $p$-binom \\")
+    body.append(r"\midrule")
+    for _, r in df.iterrows():
+        asset_label = "EUR/USD" if r["asset"] == "eurusd" else "NDX"
+        ci = f"[{r['ci95_low']:.3f}, {r['ci95_high']:.3f}]"
+        stars = sig_stars(r["p_binom_greater"])
+        body.append(f"{asset_label} & +{int(r['window_min'])}m & "
+                    f"{r['sentiment']} & {fmt_int(r['n_clusters'])} & "
+                    f"{r['hit_rate']*100:.1f}\\%{stars} & {ci} & "
+                    f"{fmt_pval(r['p_binom_greater'])} \\\\")
+    body.append(r"\bottomrule")
+    body.append(r"\end{tabular}")
+    body.append(r"\begin{tablenotes}")
+    body.append(r"\footnotesize")
+    body.append(r"\item \textit{Notes.} Direction hit rate separately for events")
+    body.append(r"labelled bull and bear by the LLM (neutral events excluded as")
+    body.append(r"non-directional). Bull-labelled EUR/USD events at $+60$ minutes")
+    body.append(r"reach $57.3\%$ hit rate ($p = 0.0007$). $^{*}p<0.10$, $^{**}p<0.05$,")
+    body.append(r"$^{***}p<0.01$ on raw $p$-values.")
+    body.append(r"\end{tablenotes}")
+    body.append(r"\end{threeparttable}")
+    body.append(r"\end{table}")
+    write_table("table_A3_subsample_direction", "\n".join(body) + "\n")
+
+
 def table_9_external_benchmark():
     """External benchmark on Financial PhraseBank (Malo et al. 2014)."""
     path = OUTPUTS / "external_benchmark_metrics.csv"
@@ -788,6 +924,10 @@ def main():
     table_9_external_benchmark()
     table_10_backtest()
     table_11_winsorisation()
+    # Online Appendix tables
+    table_A1_cluster_gap_robustness()
+    table_A2_subsample_magnitude()
+    table_A3_subsample_direction()
     print("Done.")
 
 

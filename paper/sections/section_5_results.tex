@@ -3,7 +3,7 @@
 
 We organise the discussion around six themes
 (Sections~\ref{ssec:results-volatility}--\ref{ssec:results-robustness}).
-The strongest single finding (Section~\ref{ssec:results-volatility})
+The central magnitude result (Section~\ref{ssec:results-volatility})
 is a robust and substantial increase in intraday magnitude and range
 around news events, present across all assets and windows. The
 directional content of LLM sentiment (Section~\ref{ssec:results-direction})
@@ -32,13 +32,18 @@ on a one-sided Mann-Whitney $U$ test and remain significant under a
 Welch $t$-test robustness check (Online Appendix). On the primary
 $5/15/60$-minute windows the event/baseline ratios are
 $\{1.76, 1.69, 1.58\}$ for EUR/USD and $\{1.56, 1.57, 1.43\}$ for
-NDX. See Table~\ref{tab:h1-main} and
-Figure~\ref{fig:event-time-profile}, which plots the average
-absolute log-return as a function of minutes from the event
-timestamp; both assets show a sharp lift in the post-event window
-that persists for at least four hours, with the EUR/USD ratio
-larger at short horizons and the NDX ratio larger at longer
-horizons.
+NDX. In economic terms at the $+15$-minute window, the mean
+absolute return is $5.3$ pips on EUR/USD (versus $3.1$ pips for the
+matched baseline) and $14.4$ basis points on NDX (versus $9.2$
+basis points). The marginal effect of being inside an event window
+is therefore on the order of $2.2$ pips for EUR/USD and $5.2$ basis
+points for NDX over the first quarter hour. See
+Table~\ref{tab:h1-main} and Figure~\ref{fig:event-time-profile},
+which plots the average absolute log-return as a function of
+minutes from the event timestamp; both assets show a sharp lift in
+the post-event window that persists for at least four hours, with
+the EUR/USD ratio larger at short horizons and the NDX ratio larger
+at longer horizons.
 
 \input{tables/table_5_h1_main.tex}
 
@@ -62,9 +67,9 @@ $1.51\times$. All twenty cells in this table reach $q < 10^{-30}$.
 The economic interpretation is that news events generate
 intra-window excursions that close-to-close returns understate,
 often because the price overshoots and partially reverses within
-the same window. This is the single most useful new result of the
-analysis and we recommend that practitioners reading the paper
-attend to it more than to any of the direction-based tests.
+the same window. The intra-window range and maximum absolute move
+are therefore more informative outcomes than the close-to-close
+return for characterising the magnitude response.
 Figure~\ref{fig:range-ratios} plots the three magnitude ratios
 side by side; both range and maximum absolute move sit above the
 close-to-close ratio on every cell, particularly at the shortest
@@ -276,9 +281,10 @@ the underlying primary source (wire service, agency feed,
 official release). The most plausible reading of the pre-event
 drift is information arrival latency in the public feed rather
 than insider trading or front-running, but the data alone cannot
-adjudicate between these. Practitioners reading this section
-should infer that entering a trade at the timestamp of the
-Discord post is often already late.
+adjudicate between these. The implication for the event-study
+interpretation is that the standard assumption that the public
+publication time coincides with the informational event time is
+materially violated in this setting.
 
 \begin{figure}[!htbp]
 \centering
