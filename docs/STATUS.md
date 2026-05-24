@@ -46,35 +46,47 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
 
 ## Verdict rezultate dupa corectii
 
-| H | Verdict | Nota pentru paper |
-|---|---|---|
-| H1 | robust | Rezultatul central: evenimentele produc miscari absolute peste baseline. |
-| H2 | modest/mixed | Edge directional mic; nu trebuie vandut ca predictor puternic. |
-| H3 | partial | NDX +5m/+15m ramane interesant dupa SE clusterizate. |
-| H4 | partial | NDX closed-period gap semnificativ; EUR/USD marginal. |
-| H5 | slab/partial | Magnitude labels sunt exploratorii. |
-| H6 | slab | Confidence necalibrat; discutat ca limitation. |
-| H7 | partial | Categoria `corporate` a fost adaugata; EUR/USD are semnal modest. |
-| H8 | robust cu caveat | Formulare corecta: pre-event drift / feed latency, nu dovada directa de front-running. |
-| H9 | robust | Persistenta miscarii ramane o constatare solida. |
-| H10 | proxy only | Volumul Dukascopy nu este volum consolidat. |
-| H11 | partial | Time-of-day mai ales pe EUR/USD. |
-| H12 | slab | Asimetrie bear/bull mica. |
-| H13 | slab/partial | Surprise-level ajuta mai ales NDX pe termen foarte scurt. |
-| H14 | robust dar conventional | Semnul depinde de EUR/USD vs USD proxy. |
+Coloana **Paper** indica destinatia finala in paper:
+- **MAIN**: in Section 5 Results, raportat in tabel principal;
+- **APX**: doar in Appendix (tabel complet, mentiune scurta in text);
+- **LIM**: doar o propozitie in Section 7 Limitations;
+- **CUT**: scos complet din raportare (redundant cu alt rezultat).
+
+| H | Verdict | Paper | Nota |
+|---|---|---|---|
+| H1 | robust | MAIN | Rezultatul central: evenimentele produc miscari absolute peste baseline. §5.1. |
+| H2 | modest/mixed | MAIN | Edge directional mic; nu trebuie vandut ca predictor puternic. §5.2. |
+| H3 | partial | MAIN | NDX +5m/+15m ramane interesant dupa SE clusterizate. §5.2. |
+| H4 | partial | MAIN | NDX closed-period gap semnificativ; EUR/USD marginal. §5.5. |
+| H5 | slab/partial | APX | Magnitude labels exploratorii. Consolidat cu H13 intr-o subsectiune scurta. |
+| H6 | slab | LIM | Confidence necalibrat. O propozitie in Limitations; tabele in appendix. |
+| H7 | partial | CUT | Redundant cu C4 (categorical analysis). Eliminat din raportare. |
+| H8 | robust cu caveat | MAIN | Pre-event drift / feed latency, nu dovada directa de front-running. §5.4. |
+| H9 | robust | MAIN | Persistenta miscarii. §5.4. |
+| H10 | proxy only | LIM | Volumul Dukascopy nu este volum consolidat. Limitations + appendix. |
+| H11 | partial | MAIN | Time-of-day, focus EUR/USD. §5.3 (scurt). |
+| H12 | slab | LIM | Asimetrie bear/bull mica. O propozitie in Limitations. |
+| H13 | slab/partial | APX | Consolidat cu H5 ca "LLM auxiliary labels". |
+| H14 | robust dar conventional | MAIN | Cross-asset, scurt. §5.5. |
 
 ## Verdict extensii noi
 
-| Output | Verdict | Nota pentru paper |
-|---|---|---|
-| Cluster sentiment | partial | NDX +5m/+15m devine mai interesant la nivel de cluster; EUR/USD ramane modest. |
-| Range/max move | foarte robust | Cel mai bun rezultat nou: miscarea maxima si range-ul sunt peste baseline in toate ferestrele. |
-| Abnormal z-score | robust | Standardizarea face comparabile EUR/USD si NDX si intareste H1 pe magnitudine. |
-| Targeted categories | util | Permite fraze mai puternice pe categorii, mai ales pe magnitudine, nu neaparat directie. |
-| Pre/post cutoff | robust | Efectul ramane dupa `2026-01-15`, deci argumentul de memorization este mai slab. |
-| Multivariate controls | defensabil | Include categorie, surprise, magnitude, confidence, cluster size, headline length si pre-event move. |
-| Outlier robustness | robust | Winsorizarea 1% pastreaza semnalul principal. |
-| Flash/Pro consensus | exploratoriu | Sample-ul de 200 arata ferestre promitatoare, dar nu trebuie vandut ca rezultat central. |
+| Output | Verdict | Paper | Nota |
+|---|---|---|---|
+| C1 Cluster sentiment | partial | MAIN | §5.2, alaturi de H2. |
+| C2 Range/max move | foarte robust | MAIN | Cel mai puternic rezultat nou. §5.1. |
+| C3 Abnormal z-score | robust | MAIN | §5.1, standardizare. |
+| C4 Targeted categories | util | MAIN | §5.3. Inlocuieste H7. |
+| C5 Pre/post cutoff | robust | MAIN | §5.6 robustness. |
+| C6 Multivariate controls | defensabil | MAIN | §5.6 robustness. |
+| C7 Outlier robustness | robust | MAIN | §5.6 robustness. |
+| C8 Flash/Pro consensus | exploratoriu | LIM | n=200 underpowered. Footnote sau Limitations, nu Results. |
+
+## Window strategy in paper
+
+- **Primary in Section 5 tables**: 5m, 15m, 60m.
+- **Appendix robustness**: 1m (bid-ask bounce), 240m (margin of "intraday").
+- Reduce tabelele cu ~40% fara pierdere de concluzii.
 
 ## Comenzi de reproducere
 
@@ -92,16 +104,26 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
 
 ## Ce mai trebuie inainte de paper final
 
-- Mentinere preturi actualizate daca exportul de stiri se extinde dupa `2026-05-05`.
-- Validare manuala a sentimentului pe 200 evenimente:
-  - doi etichetatori;
-  - Cohen's kappa;
-  - F1 LLM vs consens;
-  - split pre/post cutoff pentru memorization risk.
-- `references.bib` / lista APA 7 verificata.
-- Tabel central pentru paper, cu verdict conservator pe fiecare ipoteza.
-- Case studies manuale cu timestamp verificat fata de sursa de stire, nu doar fata de Discord.
+Ordine de prioritate (vezi sectiunea Pre-submission TODO din `Structura_paper.md` pentru detalii):
 
-## Atentie
+**Blocking**:
+1. Validare manuala sentiment (200 evenimente, 2 etichetatori, Cohen's kappa, F1 vs consens, split pre/post `2026-01-15`). Sample exista, scoring exista, depinde de oameni.
 
-Fisierele `.docx` din `docs/` sunt originale/legacy. Pentru starea actuala a proiectului, foloseste Markdown-ul si raportul HTML regenerate.
+**Strong nice-to-have**:
+2. Baseline comparison cu FinBERT + Loughran-McDonald dictionary (1-2 zile cod). Raspunde la "why LLM, not dictionary?".
+3. Case studies cu timestamp verificat la sursa primara (Bloomberg/Reuters) pe 5-10 stiri.
+
+**Submission housekeeping**:
+4. `references.bib` in APA 7 verificat manual.
+5. Reproducibility statement (link repo, seed, comanda validator).
+6. Mentinere preturi actualizate daca exportul de stiri se extinde dupa `2026-05-05`.
+
+## Cleanup proiect aplicat 2026-05-24
+
+- Sters root JSON partial (137KB, 2 zile).
+- Sters legacy `docs/Plan_proiect_economie.{md,docx}` si `docs/Structura_paper.docx`.
+- Sters `outputs/events_sentiment_new.csv` (test rezidual).
+- Sters `__pycache__/`.
+- Sters `trader_insights.py` + outputs (redundant cu C4).
+- Mutat `trader_backtest.py` + `Interpretare_traderi.md` in `trader/` ca deliverable practitioner separat.
+- `compare_models.py` + outputs raman pe disk ca cod orfan documentat (C8 a iesit din paper).

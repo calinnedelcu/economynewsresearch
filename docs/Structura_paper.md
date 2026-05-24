@@ -135,31 +135,45 @@ Baseline-ul se construieste din ferestre random valide, excluzand un buffer in j
 
 ### 4.5 Hypothesis Tests
 
-Ipotezele trebuie raportate conservator:
+Ipotezele sunt impartite explicit in main results, robustness checks, appendix si limitations. Codul ruleaza toate testele pentru reproducibility, dar paper-ul prioritizeaza ipotezele cu verdict non-trivial.
 
-- H1: abs return event vs matched baseline, Welch one-sided + Mann-Whitney U.
-- H2: target sentiment vs realized target direction, binomial one-sided.
+**Main results (raportate in Section 5)**:
+
+- H1: abs return event vs matched baseline, primary test = Mann-Whitney U one-sided (Welch t-test in appendix robustness).
+- H2: target sentiment vs realized target direction, binomial one-sided. Raportat cu hit rate si CI 95%.
 - H3: OLS `abs_return ~ sentiment + prior_trend + sentiment x prior_trend`, covarianta clusterizata.
 - H4: closed-period `target_gap_pct ~ aggregate_target_sentiment`, HC3 robust SE.
-- H5/H7/H13: ANOVA + Kruskal-Wallis.
-- H6: Brier score si reliability buckets.
 - H8: pre-event drift vs matched baseline; formulare ca feed latency / information timing, nu dovada directa de front-running.
 - H9: sign persistence +15m vs +4h.
-- H10: volume proxy only.
-- H11: hour/day effects.
-- H12: bear vs bull asymmetry.
+- H11: hour/day effects (subsectiune scurta, focus EUR/USD).
 - H14: raportat atat EUR/USD vs NDX, cat si USD proxy vs NDX.
 
-Extensii C1-C8:
+**Extensii principale C1-C7 (in Section 5)**:
 
 - C1: cluster-level target sentiment vs realized target direction.
-- C2: range si max-absolute-move vs matched baseline.
+- C2: range si max-absolute-move vs matched baseline. **Rezultatul cel mai puternic nou**.
 - C3: abnormal z-scores pentru return, abs return, range si max move.
-- C4: ipoteze targetate pe categorii (`central_bank`, `geopolitical`, `politics`, `energy`, `corporate`).
+- C4: ipoteze targetate pe categorii (`central_bank`, `geopolitical`, `politics`, `energy`, `corporate`). Inlocuieste H7 (ANOVA pe categorii) care e redundant.
 - C5: stabilitate pre/post `2026-01-15`.
 - C6: regresii multivariate cu controale pentru categorie, surprise, magnitude, confidence, cluster size, headline length si pre-event move.
 - C7: robustete la outlieri prin winsorizare 1%.
-- C8: subset Flash/Pro consensus pe `compare_models.csv`.
+
+**Auxiliary LLM labels (consolidare H5+H13)**:
+
+- O singura subsectiune "LLM auxiliary labels (magnitude, surprise)" cu ANOVA + Kruskal-Wallis pe ambele label-uri. Tabel combinat. Verdict: util explorator, nu predictor robust.
+
+**Limitations (o propozitie/paragraf, nu subsection in Results)**:
+
+- H6: LLM confidence is uncalibrated (Brier > naive baseline); not used as a probability. Tabelele in appendix.
+- H10: Volume proxy only (Dukascopy tick volume, nu consolidated). Mentionat in Limitations, tabelele in appendix.
+- H12: No robust bear/bull asymmetry detected. O propozitie.
+- C8: Flash/Pro consensus exploratory on n=200, underpowered for main paper. Mentionat in footnote sau Limitations.
+
+**Window strategy**:
+
+- **Primary windows reported in Section 5 tables**: 5m, 15m, 60m.
+- **Appendix robustness**: 1m (bid-ask bounce concerns) si 240m (margin of "intraday").
+- Aceasta reduce dimensiunea tabelelor principale cu ~40% fara a pierde concluzii.
 
 ### 4.6 Multiple Testing
 
@@ -167,17 +181,20 @@ Toate p-value-urile din tabelele `h*_results.csv` primesc q-value Benjamini-Hoch
 
 ## 5. Results
 
-Structura recomandata:
+Structura curatata, 6 subsectiuni (in loc de 22 unitati de raportare initiale):
 
-1. Range/max-move si H1 ca rezultat central despre volatilitate/magnitudine anormala.
-2. Pre/post cutoff si outlier robustness ca aparare de robustete.
-3. H2/H3/C1/C8 ca teste despre utilitatea sentimentului.
-4. C4/C6 ca teste targetate si controale multivariate.
-5. H8/H9 ca discutie despre timing si persistenta.
-6. H4/H14 ca market-structure / cross-asset.
-7. H5-H7/H10-H13 ca analize exploratorii.
+1. **§5.1 Volatility and magnitude (central)**: H1 + C2 + C3. Raportat pe ferestre 5/15/60m. Acesta e rezultatul central al paper-ului.
+2. **§5.2 Direction (modest edge)**: H2 + C1 + backtest cu costuri. Operationalizeaza "edge < costuri".
+3. **§5.3 Heterogeneity by category and time**: C4 (categorii) + H11 (time-of-day, scurt).
+4. **§5.4 Timing and persistence**: H8 (pre-event drift cu caveat feed latency) + H9 (persistence).
+5. **§5.5 Market structure**: H4 (closed-period gap) + H14 (cross-asset, scurt).
+6. **§5.6 Robustness defense**: C5 (pre/post cutoff) + C6 (multivariate controls) + C7 (winsorization). Plus subsectiune scurta "LLM auxiliary labels" (H5+H13 consolidat).
 
-Evita formularea “all hypotheses were confirmed”. Foloseste verdict:
+**Cut din main results, mentionate doar in Limitations**: H6, H10, H12, C8.
+
+**Cut total din raportare**: H7 (suprapus cu C4).
+
+Evita formularea "all hypotheses were confirmed". Foloseste verdict:
 
 - robust;
 - partial;
@@ -201,15 +218,19 @@ Puncte de discutat:
 
 Include obligatoriu:
 
-- un singur feed de stiri;
+- un singur feed de stiri (FinancialJuice Discord);
 - timestamp Discord, nu timestamp sursa primara;
 - perioada de preturi mai scurta decat exportul de stiri;
 - doar doua active;
-- NDX este CFD proxy, nu futures/ETF oficial;
-- sentiment LLM nevalidat manual inca;
-- multiple testing;
-- evenimente suprapuse si clustere;
-- volume proxy.
+- NDX este CFD proxy (Dukascopy `E_NQ-100`), nu futures/ETF oficial;
+- sentiment LLM nevalidat manual inca (in lucru: 200-event sample cu doi etichetatori, Cohen's kappa);
+- multiple testing addressed via BH-FDR, dar number of tested hypotheses ramane mare;
+- evenimente suprapuse si clustere (addressed via cluster dedupe + clustered SE);
+- volume proxy (Dukascopy tick volume nu este consolidated volume; H10 mutat in appendix din cauza asta);
+- **LLM confidence is uncalibrated** (H6 finding); cannot be used as probability of correctness;
+- **No robust bear/bull asymmetry detected** (H12); reaction is symmetric in our sample;
+- **Flash/Pro model consensus exploratory** (C8) tested only on n=200 subsample due to API cost, underpowered for main inference;
+- absence of baseline comparison cu metode standard (dictionary Loughran-McDonald, FinBERT) este o limitare cunoscuta; in lucru ca extension.
 
 ## 8. Conclusion
 
@@ -221,9 +242,49 @@ Stirile neasteptate din feed-ul analizat sunt asociate robust cu miscari intrada
 
 Include:
 
-- promptul LLM;
+- promptul LLM si few-shot examples;
 - schema output sentiment;
 - setarile din `methodology_summary.csv`;
 - link repo;
 - comanda `validate_outputs.py`;
-- tabelele H1-H14 complete.
+- tabelele H1-H14 complete (inclusiv H6, H10, H12 cu rezultate null si C8 cu n=200);
+- ferestre 1m si 240m (robustness);
+- Welch t-test ca robustness check pentru H1 (MWU este primary).
+
+## Pre-submission TODO
+
+Inainte de submission, urmatoarele trebuie completate. In ordinea impactului:
+
+**Blocking pentru credibilitate**:
+
+1. **Validare manuala sentiment** (200 evenimente, 2 etichetatori):
+   - Sample-ul exista in `outputs/manual_validation_sample.csv` (generat de `prepare_manual_validation.py`).
+   - Scoring exista in `score_manual_validation.py` (Cohen's kappa + F1 LLM vs consens).
+   - Split pre/post `2026-01-15` pentru memorization risk argument.
+   - Fara aceasta, claim-urile despre LLM sentiment nu sunt falsifiable pentru reviewer.
+
+**Strong nice-to-have**:
+
+2. **Baseline comparison cu FinBERT si Loughran-McDonald dictionary**:
+   - Script nou (~1-2 zile) care ruleaza ambele baseline pe acelasi corpus.
+   - Permite fraza tip "our LLM beats dictionary baseline by X pp on hit rate, matches FinBERT".
+   - Raspunde direct la "why LLM and not standard methods?" din referee report.
+
+3. **Case studies cu timestamp verificat la sursa primara**:
+   - 5-10 stiri reprezentative, verificate manual fata de Bloomberg/Reuters/oficial source.
+   - Intareste interpretarea H8 (feed latency vs front-running).
+
+**Formatting / submission**:
+
+4. **`references.bib` in APA 7 verificat manual**:
+   - Nu folosi citatii neverificate din notitele initiale.
+   - Lista de checat: Tetlock 2007, Loughran-McDonald 2011, Andersen-Bollerslev-Diebold-Vega 2003, Calomiris-Mamaysky 2019, Heston-Sinha 2017, FinBERT (Yang et al. 2020).
+
+5. **Reproducibility statement**:
+   - Link repo public.
+   - Seed (`42`), versiuni in `requirements.txt`.
+   - Comanda `validate_outputs.py`.
+
+6. **Pre-registration / ethics**:
+   - Daca journal-ul cere: declaratie ca ipotezele initiale (H1-H14) au fost specificate inainte de cleanup-ul rezultatelor.
+   - Mentionare ca H6/H10/H12 raman raportate in appendix chiar daca verdict null.
