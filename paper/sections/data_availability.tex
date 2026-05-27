@@ -5,7 +5,8 @@ The replication package supporting this study---comprising the full
 analysis pipeline, the LLM sentiment cache, the Loughran-McDonald and
 FinBERT baseline runs, the external benchmark replication, the table
 and figure generation scripts, and the LaTeX source for this paper---is
-available at [GITHUB\_REPO\_URL, TBA].
+available at
+\url{https://github.com/calinnedelcu/economynewsresearch}.
 
 The two raw input datasets are publicly accessible and reproducible
 from their primary sources rather than redistributed in the
@@ -33,7 +34,8 @@ merge-existing}). No Dukascopy account is required.
 
 The DeepSeek API sentiment cache is shipped with the replication
 package as a SQLite database, so re-running the LLM classification
-step is not required to reproduce the reported results. Re-running
-from scratch with the published prompt and seed reproduces the cache
-deterministically modulo API non-determinism in model responses
-(temperature is set to zero throughout).
+step is not required to reproduce the reported results. The cache is
+the fixed replication input for the reported classifications.
+Re-running from scratch with the published prompt may produce small
+differences because hosted model responses are not guaranteed to be
+bitwise deterministic; the classification run used temperature $0.1$.

@@ -1,5 +1,11 @@
 # Paper Audit and Improvement Plan
 
+> **Historical note (2026-05-27).** This audit is retained as a
+> development record. Several Wave 1--4 items identified below have
+> since been implemented in the current `paper/sections/*.tex` sources
+> and compiled PDFs. Treat `docs/STATUS.md`, the generated tables, and
+> the current LaTeX sources as the authoritative project status.
+
 Document de lucru pentru aducerea paper-ului la nivel de submission top-tier
 finance journal. Bazat pe analiza:
 

@@ -75,6 +75,11 @@ Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
 - `outputs/report.html`
 - `docs/report.html`
 
+Artefactele academice compilate sunt in:
+
+- `paper/main.pdf`
+- `paper/online_appendix.pdf`
+
 Interpretarea non-tehnica pentru traderi este in:
 
 - `trader/Interpretare.md`
@@ -109,6 +114,8 @@ Sentiment classification necesita `.env`:
 DEEPSEEK_API_KEY=sk-...
 ```
 
+Repo-ul poate fi citat cu metadatele din `CITATION.cff`.
+
 ## Rulare pipeline
 
 ```bash
@@ -135,6 +142,14 @@ DEEPSEEK_API_KEY=sk-...
 
 # Dupa ce etichetatorii completeaza CSV-ul:
 .venv/Scripts/python.exe score_manual_validation.py
+```
+
+Comenzi scurte echivalente, daca `make` este disponibil:
+
+```bash
+make validate
+make report
+make all-paper
 ```
 
 ## Output-uri principale

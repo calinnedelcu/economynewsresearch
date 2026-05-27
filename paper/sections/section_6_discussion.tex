@@ -38,10 +38,11 @@ volatility than its bullishness content is with returns, and with
 the \citet{heston2017news} observation that news has faster effects
 on volatility than on directional returns.
 
-The hit-rate advantage of the LLM-derived sentiment over both
-baselines is in the 2--6 percentage point range on the primary
-windows (Section~\ref{ssec:results-direction}), which is not a
-dramatic improvement on the headline metric. The qualitative
+The hit-rate advantage of the LLM-derived sentiment over the
+dictionary baseline is about 1--6 percentage points on the primary
+windows, and the LLM is competitive with FinBERT, beating it in
+five of six primary cells (Section~\ref{ssec:results-direction}).
+This is not a dramatic improvement on the headline metric. The qualitative
 advantage is more substantial: the LLM produces different sentiment
 for USD and for NDX on $73.5\%$ of events, a property that captures
 the cross-asset asymmetry of risk-on/risk-off events that a
@@ -56,9 +57,10 @@ rate.
 The pre-event drift result (Section~\ref{ssec:results-timing}, H8)
 is the methodologically most consequential finding of the analysis.
 The absolute return in the fifteen minutes preceding a Discord
-headline is elevated above the matched baseline at $q < 10^{-40}$
-on both assets, with a magnitude comparable to the post-event drift
-on the same window.
+headline is elevated above the matched baseline at
+$q = 7.5\times10^{-47}$ for EUR/USD and
+$q = 2.2\times10^{-40}$ for NDX, with a magnitude comparable to
+the post-event drift on the same window.
 
 A naive interpretation would invoke insider trading or systematic
 front-running. We caution against that reading. The Discord
@@ -85,7 +87,8 @@ diagnostic alongside the post-event response.
 We do not test whether more sophisticated LLM prompting
 (chain-of-thought, multi-prompt ensembles), more recent LLM models,
 or fine-tuning on a hand-labelled subsample would improve the
-directional results beyond the present 2--6 pp margin. We do not
+directional results beyond the present small single-digit
+percentage-point margins. We do not
 extend the asset universe beyond \eurusd{} spot and the
 \ndx{} CFD, nor do we test individual equities where firm-specific
 news effects would dominate. We do not decompose the magnitude

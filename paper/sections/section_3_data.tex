@@ -59,15 +59,16 @@ The prompt explicitly instructs the model to (a)~base its judgment
 only on the supplied text, (b)~return \texttt{neutral} with low
 confidence when the message is ambiguous, and (c)~treat USD and NDX
 independently so that risk-off events can map to
-\texttt{bull USD, bear NDX} simultaneously. Five few-shot examples
-covering geopolitical, central bank, corporate, and neutral cases
-are included verbatim in the system prompt to anchor the output
-format. Calls are cached locally in SQLite, keyed on the hash of the
-model name, system prompt, and event content, so that re-runs during
-prompt iteration do not duplicate API costs.\footnote{We set
-temperature to zero throughout and validate cache hits against fresh
-calls on a held-out subsample of 50 events; agreement is exact at
-this temperature with the API version used during data collection.}
+\texttt{bull USD, bear NDX} simultaneously. Eight few-shot examples
+covering geopolitical, central bank, corporate, commodity-shock,
+and neutral or low-relevance cases are included in the chat prompt
+to anchor the output format. Calls are cached locally in SQLite,
+keyed on the hash of the model name, system prompt, and event
+content, so that re-runs during prompt iteration do not duplicate
+API costs.\footnote{We set the API sampling temperature to $0.1$.
+The released SQLite cache is therefore the fixed replication input
+for the reported classifications; fresh API reruns from the
+published prompt may vary marginally with model-serving changes.}
 
 The LLM-derived labels are the primary sentiment input throughout
 the paper. In Section~\ref{ssec:results-direction} we benchmark them

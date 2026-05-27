@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this replication package, please cite the paper and repository."
+title: "Unexpected Online Financial News and Intraday Market Reactions: An Event-Study of EUR/USD and Nasdaq-100 Prices"
+authors:
+  - family-names: "Nedelcu"
+    given-names: "Andrei Calin"
+  - family-names: "Cheroiu"
+    given-names: "Andrei"
+date-released: "2026-05-27"
+repository-code: "https://github.com/calinnedelcu/economynewsresearch"
+keywords:
+  - event study
+  - intraday returns
+  - financial news
+  - sentiment analysis
+  - large language models
+  - EUR/USD
+  - Nasdaq-100

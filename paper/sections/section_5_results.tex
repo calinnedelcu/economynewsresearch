@@ -27,7 +27,7 @@ Across both assets and all five window lengths, the mean absolute
 event return exceeds the mean absolute matched-baseline return by a
 factor between $1.33\times$ and $1.87\times$. The smallest ratio
 occurs on the longest NDX window (240 minutes), the largest on the
-shortest EUR/USD window (1 minute). All ten cells reach $q < 10^{-14}$
+shortest EUR/USD window (1 minute). All ten cells reach $q < 10^{-7}$
 on a one-sided Mann-Whitney $U$ test and remain significant under a
 Welch $t$-test robustness check (Online Appendix). On the primary
 $5/15/60$-minute windows the event/baseline ratios are
@@ -87,14 +87,14 @@ The horizontal dotted line marks the no-effect level of $1.0$.}
 \paragraph{C3 (standardised abnormal $z$-scores).}
 Re-expressing the same outcomes as standardised abnormal scores
 against the hour-of-day, day-of-week matched baseline confirms the
-pattern on a dimensionless scale. The mean $|z|$ on the
-close-to-close return is in the range $0.57$--$1.24$ across assets
-and windows; the mean $|z|$ on range is in the range
-$1.04$--$1.53$; and the mean $|z|$ on the maximum absolute move is
-in the range $0.92$--$2.40$. The signed return $z$-scores are not
-significantly different from zero in most cells, reinforcing the
-finding that the news effect is on magnitude rather than on
-direction.
+pattern on a dimensionless scale. On the primary $5/15/60$-minute
+windows, the mean $|z|$ on the close-to-close return is in the
+range $0.57$--$0.91$ across assets and windows; the mean $|z|$ on
+range is in the range $1.04$--$1.53$; and the mean $|z|$ on the
+maximum absolute move is in the range $0.92$--$1.31$. The signed
+return $z$-scores are not significantly different from zero in
+most cells, reinforcing the finding that the news effect is on
+magnitude rather than on direction.
 
 \subsection{Direction: modest, and below transaction costs}
 \label{ssec:results-direction}
@@ -123,8 +123,9 @@ A side-by-side comparison of hit rates between the LLM-derived
 sentiment, the deterministic Loughran-McDonald dictionary
 \citep{loughran2011liability}, and the FinBERT-tone neural
 classifier \citep{yang2020finbert}, all computed on identical event
-windows, shows that the LLM outperforms both baselines on the
-majority of the primary windows. Against Loughran-McDonald, the LLM
+windows, shows that the LLM outperforms the dictionary baseline on
+the majority of the primary windows and is competitive with the
+neural baseline. Against Loughran-McDonald, the LLM
 advantage is $+0.6$ to $+5.5$ percentage points across the six
 primary $5/15/60$-minute cells. Against FinBERT, the LLM advantage
 is $-0.5$ to $+4.5$ percentage points; the LLM beats FinBERT in
@@ -134,9 +135,10 @@ in fact underperforms a coin flip ($47.0\%$ to $47.8\%$), reflecting
 its tendency to map politically-tinged headlines to a uniformly
 negative tone that does not correspond to equity-index direction in
 the modern period. FinBERT classifies $73.1\%$ of events as neutral
-(versus $42.2\%$ for the LLM), reducing its effective directional
-sample size by roughly $55\%$ and contributing little incremental
-signal where it does commit to a direction.
+(versus $26.4\%$ for the LLM USD labels and $20.2\%$ for the LLM
+NDX labels), substantially reducing its effective directional
+sample size and contributing little incremental signal where it
+does commit to a direction.
 
 The LLM also produces cross-asset disagreement
 (\texttt{sentiment\_usd} $\neq$ \texttt{sentiment\_ndx}) on $73.5\%$
@@ -224,13 +226,15 @@ downward over the sample.}
 Across the five non-trivial categories (\texttt{central\_bank},
 \texttt{geopolitical}, \texttt{politics}, \texttt{energy},
 \texttt{corporate}), the volatility-magnitude finding of
-Section~\ref{ssec:results-volatility} holds uniformly: standardised
-abnormal $z$-scores on the maximum absolute move are significantly
-positive at $q < 10^{-9}$ in every category-asset-window cell we
-tested. The directional content is more mixed: central-bank events
-on the NDX 15-minute window achieve a hit rate of $55.8\%$ with
-$q = 0.058$, but no other single category-asset-window cell reaches
-$q < 0.05$ on direction. The pattern is that category-level
+Section~\ref{ssec:results-volatility} holds broadly: standardised
+abnormal $z$-scores on the maximum absolute move are positive in
+every category-asset-window cell we tested, and the one-sided
+$t$-test remains significant at $q < 0.05$ in all cells. The
+directional content is more mixed: central-bank events on the NDX
+15-minute window achieve a hit rate of $55.8\%$ with $q = 0.058$,
+while the small energy EUR/USD 15-minute cell reaches $66.7\%$
+with $q = 0.039$ on only 42 directional clusters. The pattern is
+that category-level
 information helps locate where the magnitude reaction is largest
 (central-bank releases produce the highest absolute moves on
 EUR/USD, geopolitical events the highest on NDX) without sharpening
@@ -256,10 +260,10 @@ cross-asset asymmetry.}
 EUR/USD shows a robust hour-of-day effect on the event/baseline
 ratio (Kruskal-Wallis $p < 10^{-12}$, $q < 10^{-11}$), with the
 largest effects clustered around the New York open. The day-of-week
-effect is not statistically significant. NDX shows neither effect
-at a level that survives FDR correction; we attribute this to the
-more uniform liquidity profile of the index relative to a single
-currency pair.
+effect is not statistically significant. NDX shows a weaker
+hour-of-day effect under the Kruskal-Wallis test ($q = 0.032$) but
+not under the ANOVA specification, and shows no day-of-week effect
+that survives FDR correction.
 
 \subsection{Timing and persistence}
 \label{ssec:results-timing}
@@ -268,8 +272,8 @@ currency pair.
 The absolute return in the 15 minutes preceding an event is
 significantly elevated above the matched baseline on both assets:
 EUR/USD mean pre-event $|r| = 0.053$ versus baseline $0.031$
-($q < 10^{-46}$), NDX $|r| = 0.158$ versus baseline $0.092$
-($q < 10^{-40}$). The pre-event drift is on the same order of
+($q = 7.5\times10^{-47}$), NDX $|r| = 0.158$ versus baseline $0.092$
+($q = 2.2\times10^{-40}$). The pre-event drift is on the same order of
 magnitude as the post-event drift for the same windows.
 Figure~\ref{fig:pre-post-drift} plots the per-minute mean $|r|$
 from $-30$ to $+30$ minutes around each event; the lift starts
@@ -343,9 +347,10 @@ NDX event-window returns at 15 minutes is $-0.148$ ($q < 10^{-6}$),
 as expected from the macroeconomic risk-on/risk-off pattern under
 which USD strength tends to coincide with NDX weakness.
 Re-expressed in the USD-proxy convention, the correlation becomes
-$+0.148$ and the sign-match rate (USD-proxy and NDX moving in the
-same direction) is $56.6\%$ across $1{,}176$ clusters
-($q < 10^{-5}$). We report both signs to forestall
+$+0.148$; the same-sign rate is $43.4\%$ and the opposite-sign rate
+is $56.6\%$ across $1{,}176$ clusters ($q < 10^{-5}$ for deviation
+from a $50\%$ split). We report both price and target-aligned
+conventions to forestall
 misinterpretation when the paper is read alongside event studies
 that work directly with the EUR/USD price.
 
@@ -357,8 +362,10 @@ results are supported by three robustness exercises.
 
 \paragraph{C5 (pre/post 2026-01-15 knowledge-cutoff split).}
 Splitting the sample at the LLM's training data cutoff, the central
-magnitude findings hold on both halves with $q < 10^{-13}$
-throughout. On the pre-cutoff half, mean $|z|$ for the absolute
+magnitude findings hold on both halves, with maximum-move tests
+remaining below $q < 10^{-13}$ on the primary windows and
+absolute-return tests also positive but somewhat less extreme in
+the post-cutoff half. On the pre-cutoff half, mean $|z|$ for the absolute
 return is $0.80$--$1.00$ across primary windows on EUR/USD and
 $0.64$--$0.83$ on NDX; the post-cutoff half is statistically
 similar. This argues against an explanation in which the LLM's
@@ -389,8 +396,9 @@ Table~\ref{tab:multivariate} reports four representative cells.
 
 \paragraph{C7 (winsorisation at the 1\% tails).}
 Winsorising every outcome at the $1\%$ tails produces mean $|z|$
-values that are within $5$--$10\%$ of the raw mean and $p$-values
-that remain below $10^{-30}$ in the central cells. The headline
+values that are mostly within about $5$--$13\%$ of the raw mean on
+the primary windows and $p$-values that remain below $10^{-20}$ in
+the central cells. The headline
 magnitude finding is not driven by a small number of extreme
 observations. Table~\ref{tab:winsor} reports the raw and
 winsorised means side by side.
