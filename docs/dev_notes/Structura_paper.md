@@ -1,5 +1,8 @@
 # Structura research paper
 
+> **Development note.** Historical outline retained for context; the
+> current paper is maintained in `paper/sections/*.tex`.
+
 Document de lucru pentru varianta finala a paper-ului. Aceasta versiune reflecta metodologia corectata din `event_study.py`.
 
 ## Titlu propus
@@ -167,7 +170,6 @@ Ipotezele sunt impartite explicit in main results, robustness checks, appendix s
 - H6: LLM confidence is uncalibrated (Brier > naive baseline); not used as a probability. Tabelele in appendix.
 - H10: Volume proxy only (Dukascopy tick volume, nu consolidated). Mentionat in Limitations, tabelele in appendix.
 - H12: No robust bear/bull asymmetry detected. O propozitie.
-- C8: Flash/Pro consensus exploratory on n=200, underpowered for main paper. Mentionat in footnote sau Limitations.
 
 **Window strategy**:
 
@@ -184,13 +186,13 @@ Toate p-value-urile din tabelele `h*_results.csv` primesc q-value Benjamini-Hoch
 Structura curatata, 6 subsectiuni (in loc de 22 unitati de raportare initiale):
 
 1. **§5.1 Volatility and magnitude (central)**: H1 + C2 + C3. Raportat pe ferestre 5/15/60m. Acesta e rezultatul central al paper-ului.
-2. **§5.2 Direction (modest edge)**: H2 + C1 + backtest cu costuri. Operationalizeaza "edge < costuri".
+2. **§5.2 Direction (modest edge)**: H2 + C1 + comparatie LM/FinBERT + PhraseBank. Costurile raman doar caveat scurt, fara componenta operationala.
 3. **§5.3 Heterogeneity by category and time**: C4 (categorii) + H11 (time-of-day, scurt).
 4. **§5.4 Timing and persistence**: H8 (pre-event drift cu caveat feed latency) + H9 (persistence).
 5. **§5.5 Market structure**: H4 (closed-period gap) + H14 (cross-asset, scurt).
 6. **§5.6 Robustness defense**: C5 (pre/post cutoff) + C6 (multivariate controls) + C7 (winsorization). Plus subsectiune scurta "LLM auxiliary labels" (H5+H13 consolidat).
 
-**Cut din main results, mentionate doar in Limitations**: H6, H10, H12, C8.
+**Cut din main results, mentionate doar in Limitations**: H6, H10, H12.
 
 **Cut total din raportare**: H7 (suprapus cu C4).
 
@@ -223,13 +225,12 @@ Include obligatoriu:
 - perioada de preturi mai scurta decat exportul de stiri;
 - doar doua active;
 - NDX este CFD proxy (Dukascopy `E_NQ-100`), nu futures/ETF oficial;
-- sentiment LLM nevalidat manual inca (in lucru: 200-event sample cu doi etichetatori, Cohen's kappa);
+- sentiment LLM nevalidat manual inca; validarea pe FinancialJuice ramane follow-up separat;
 - multiple testing addressed via BH-FDR, dar number of tested hypotheses ramane mare;
 - evenimente suprapuse si clustere (addressed via cluster dedupe + clustered SE);
 - volume proxy (Dukascopy tick volume nu este consolidated volume; H10 mutat in appendix din cauza asta);
 - **LLM confidence is uncalibrated** (H6 finding); cannot be used as probability of correctness;
 - **No robust bear/bull asymmetry detected** (H12); reaction is symmetric in our sample;
-- **Flash/Pro model consensus exploratory** (C8) tested only on n=200 subsample due to API cost, underpowered for main inference;
 - absence of baseline comparison cu metode standard (dictionary Loughran-McDonald, FinBERT) este o limitare cunoscuta; in lucru ca extension.
 
 ## 8. Conclusion
@@ -247,7 +248,7 @@ Include:
 - setarile din `methodology_summary.csv`;
 - link repo;
 - comanda `validate_outputs.py`;
-- tabelele H1-H14 complete (inclusiv H6, H10, H12 cu rezultate null si C8 cu n=200);
+- tabelele H1-H14 complete (inclusiv H6, H10, H12 cu rezultate null);
 - ferestre 1m si 240m (robustness);
 - Welch t-test ca robustness check pentru H1 (MWU este primary).
 
@@ -258,10 +259,9 @@ Inainte de submission, urmatoarele trebuie completate. In ordinea impactului:
 **Blocking pentru credibilitate**:
 
 1. **Validare manuala sentiment** (200 evenimente, 2 etichetatori):
-   - Sample-ul exista in `outputs/manual_validation_sample.csv` (generat de `prepare_manual_validation.py`).
-   - Scoring exista in `score_manual_validation.py` (Cohen's kappa + F1 LLM vs consens).
+   - Ramane follow-up metodologic, nu infrastructura inclusa in release-ul curent.
    - Split pre/post `2026-01-15` pentru memorization risk argument.
-   - Fara aceasta, claim-urile despre LLM sentiment nu sunt falsifiable pentru reviewer.
+   - Fara aceasta, claim-urile despre LLM sentiment sunt sustinute de PhraseBank, dar nu validate direct pe esantionul FinancialJuice.
 
 **Strong nice-to-have**:
 

@@ -1815,57 +1815,6 @@ def test_outlier_robustness(cluster_df: pd.DataFrame):
     return pd.DataFrame(results)
 
 
-def test_model_consensus(returns_df: pd.DataFrame, compare_csv: Path, cluster_dedupe=True):
-    print("\n=== C8: Flash/Pro consensus subset ===")
-    if compare_csv is None or not compare_csv.exists():
-        print("  compare_models.csv not found; skipping consensus test")
-        return pd.DataFrame()
-
-    compare = pd.read_csv(compare_csv, parse_dates=["timestamp_utc"])
-    compare["event_id"] = compare["id"].astype(str)
-    rows = []
-    for asset in ASSETS:
-        sent_col = "sentiment_usd" if asset == "eurusd" else "sentiment_ndx"
-        flash = f"flash_{sent_col}"
-        pro = f"pro_{sent_col}"
-        if flash not in compare.columns or pro not in compare.columns:
-            continue
-        agree = compare[
-            (compare[flash] == compare[pro])
-            & compare[flash].isin(["bull", "bear"])
-        ][["event_id", flash]].copy()
-        agree = agree.rename(columns={flash: "consensus_sentiment"})
-        if agree.empty:
-            continue
-        base = returns_df[returns_df["asset"] == asset].copy()
-        base["event_id"] = base["event_id"].astype(str)
-        merged = base.merge(agree, on="event_id", how="inner")
-        for w in WINDOWS_MIN:
-            sub_raw = merged[
-                (merged["window_min"] == w)
-                & merged["target_delta_pct"].notna()
-                & (merged["target_delta_pct"] != 0)
-            ].copy()
-            sub = first_per_cluster(sub_raw) if cluster_dedupe else sub_raw
-            if len(sub) < 5:
-                continue
-            realized = np.where(sub["target_delta_pct"] > 0, "bull", "bear")
-            correct = int((sub["consensus_sentiment"].to_numpy() == realized).sum())
-            p_binom = stats.binomtest(correct, len(sub), p=0.5, alternative="greater").pvalue
-            rows.append({
-                "asset": asset,
-                "asset_target": target_label_for_asset(asset),
-                "window_min": w,
-                "n_raw": len(sub_raw),
-                "n_clusters": len(sub),
-                "correct": correct,
-                "hit_rate": correct / len(sub),
-                "p_binom_greater": float(p_binom),
-            })
-            print(f"  {asset:6s} +{w:3d}m: consensus n={len(sub):3d} hit={correct/len(sub):.1%} p={p_binom:.4g}")
-    return pd.DataFrame(rows)
-
-
 # ---------------------------------------------------------------------------
 # Figures and summary metadata
 # ---------------------------------------------------------------------------
@@ -1936,7 +1885,6 @@ def main():
     parser.add_argument("--no-cluster-dedupe", action="store_true", help="Use raw events in non-regression tests")
     parser.add_argument("--baseline-per-event", type=int, default=DEFAULT_BASELINE_PER_EVENT)
     parser.add_argument("--exclude-buffer-min", type=int, default=DEFAULT_EXCLUDE_BUFFER_MIN)
-    parser.add_argument("--compare-models", default=None, help="Optional Flash/Pro comparison CSV for consensus tests")
     args = parser.parse_args()
 
     events, prices = load_data(args.events, args.prices_dir)
@@ -2019,8 +1967,6 @@ def main():
     c5 = test_pre_post_stability(cluster_df)
     c6 = test_multivariate_models(cluster_df)
     c7 = test_outlier_robustness(cluster_df)
-    compare_path = Path(args.compare_models) if args.compare_models else out_dir / "compare_models.csv"
-    c8 = test_model_consensus(returns_df, compare_path, cluster_dedupe)
 
     frames = {
         "h1": h1,
@@ -2044,7 +1990,6 @@ def main():
         "pre_post_stability": c5,
         "multivariate": c6,
         "outlier_robustness": c7,
-        "model_consensus": c8,
     }
     frames = add_fdr_corrections(frames)
 

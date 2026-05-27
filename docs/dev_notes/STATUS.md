@@ -1,5 +1,8 @@
 # Status proiect
 
+> **Development note.** Historical project-status tracker; current
+> outputs are generated from the pipeline and LaTeX sources.
+
 Ultima actualizare: 2026-05-06, dupa extensii cluster/z-score/robustete.
 
 ## Stadiu curent
@@ -19,16 +22,14 @@ Pipeline-ul tehnic ruleaza end-to-end si are validator automat. Rezultatele au f
   - q-values FDR Benjamini-Hochberg;
   - `range_pct`, `max_abs_move_pct`, `abnormal_return_pct` si z-score-uri matched-baseline;
   - output cluster-level explicit in `cluster_event_study_windows.csv`;
-  - teste cluster sentiment, range/max-move, abnormal z, pre/post cutoff, target categories, multivariate controls, winsorization si Flash/Pro consensus;
+  - teste cluster sentiment, range/max-move, abnormal z, pre/post cutoff, target categories, multivariate controls si winsorization;
   - H4 summary separat de perioade (`h4_results.csv` si `h4_periods.csv`);
   - H8 fara `mean_post_abs = NaN`;
   - H10 cu caveat explicit pentru volum proxy.
 - `parse_fj_discord.py` include acum categoria `corporate`.
 - `download_prices.py` descarca implicit din `2025-03-24` pana azi UTC si poate face merge cu CSV-urile existente.
-- `make_report.py` genereaza raportul doar din CSV-urile curente, fara rezultate hardcodate.
 - `validate_outputs.py` verifica automat output-urile sensibile metodologic.
-- `prepare_manual_validation.py` genereaza esantionul de 200 evenimente pentru doi etichetatori.
-- `score_manual_validation.py` calculeaza Cohen's kappa si F1 dupa completarea etichetelor.
+- Infrastructura locala pentru validare manuala a fost scoasa din release-ul curent; validarea umana ramane follow-up.
 - `requirements.txt` include dependintele statistice reale.
 
 ## Date curente
@@ -80,7 +81,6 @@ Coloana **Paper** indica destinatia finala in paper:
 | C5 Pre/post cutoff | robust | MAIN | §5.6 robustness. |
 | C6 Multivariate controls | defensabil | MAIN | §5.6 robustness. |
 | C7 Outlier robustness | robust | MAIN | §5.6 robustness. |
-| C8 Flash/Pro consensus | exploratoriu | LIM | n=200 underpowered. Footnote sau Limitations, nu Results. |
 
 ## Window strategy in paper
 
@@ -96,10 +96,6 @@ Coloana **Paper** indica destinatia finala in paper:
 .venv/Scripts/python.exe sentiment.py outputs/events.csv -o outputs/events_sentiment.csv --workers 15
 .venv/Scripts/python.exe event_study.py
 .venv/Scripts/python.exe validate_outputs.py
-.venv/Scripts/python.exe make_report.py --also-copy docs/report.html
-.venv/Scripts/python.exe prepare_manual_validation.py
-# dupa completarea etichetelor:
-.venv/Scripts/python.exe score_manual_validation.py
 ```
 
 ## Ce mai trebuie inainte de paper final
@@ -107,7 +103,7 @@ Coloana **Paper** indica destinatia finala in paper:
 Ordine de prioritate (vezi sectiunea Pre-submission TODO din `Structura_paper.md` pentru detalii):
 
 **Blocking**:
-1. Validare manuala sentiment (200 evenimente, 2 etichetatori, Cohen's kappa, F1 vs consens, split pre/post `2026-01-15`). Sample exista, scoring exista, depinde de oameni.
+1. Validare manuala sentiment (200 evenimente, 2 etichetatori, Cohen's kappa, F1 vs consens, split pre/post `2026-01-15`) ramane follow-up; nu exista infrastructura activa in release-ul curent.
 
 **Strong nice-to-have**:
 2. Baseline comparison cu FinBERT + Loughran-McDonald dictionary (1-2 zile cod). Raspunde la "why LLM, not dictionary?".
@@ -125,5 +121,5 @@ Ordine de prioritate (vezi sectiunea Pre-submission TODO din `Structura_paper.md
 - Sters `outputs/events_sentiment_new.csv` (test rezidual).
 - Sters `__pycache__/`.
 - Sters `trader_insights.py` + outputs (redundant cu C4).
-- Mutat `trader_backtest.py` + `Interpretare_traderi.md` in `trader/` ca deliverable practitioner separat.
-- `compare_models.py` + outputs raman pe disk ca cod orfan documentat (C8 a iesit din paper).
+- Sters componenta trader si interpretarea practitioner pentru a pastra repo-ul centrat pe paper.
+- Componenta de consens intre modele a fost scoasa din release-ul curent.

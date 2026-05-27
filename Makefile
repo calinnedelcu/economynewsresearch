@@ -1,7 +1,7 @@
 PY ?= python
 PAPER_DIR := paper
 
-.PHONY: validate tables figures report paper appendix all-paper
+.PHONY: validate tables figures paper appendix all-paper
 
 validate:
 	$(PY) validate_outputs.py
@@ -11,9 +11,6 @@ tables:
 
 figures:
 	$(PY) make_figures.py
-
-report:
-	$(PY) make_report.py --also-copy docs/report.html
 
 paper:
 	cd $(PAPER_DIR) && pdflatex -interaction=nonstopmode -halt-on-error main.tex

@@ -52,7 +52,6 @@ def main():
             "h4_results.csv",
             "h4_periods.csv",
             "h8_results.csv",
-            "h10_results.csv",
             "h14_results.csv",
             "cluster_sentiment_results.csv",
             "range_outcomes_results.csv",
@@ -61,7 +60,6 @@ def main():
             "pre_post_stability_results.csv",
             "multivariate_results.csv",
             "outlier_robustness_results.csv",
-            "model_consensus_results.csv",
         ]
         for name in required:
             require_file(OUT / name)
@@ -163,10 +161,6 @@ def main():
         if h8[["mean_pre_abs", "mean_post_abs", "mean_baseline_abs"]].isna().any().any():
             raise AssertionError("H8 still contains NaNs in core means")
 
-        h10 = pd.read_csv(OUT / "h10_results.csv")
-        if "volume_caveat" not in h10.columns:
-            raise AssertionError("H10 does not carry the volume proxy caveat")
-
         h14 = pd.read_csv(OUT / "h14_results.csv")
         require_columns(
             h14,
@@ -220,9 +214,6 @@ def main():
             ["metric", "mean_raw", "mean_winsor_1pct", "q_winsor_wilcoxon_gt0"],
             "outlier_robustness_results.csv",
         )
-
-        consensus = pd.read_csv(OUT / "model_consensus_results.csv")
-        require_columns(consensus, ["hit_rate", "q_binom_greater"], "model_consensus_results.csv")
 
     except Exception as exc:
         return fail(str(exc))

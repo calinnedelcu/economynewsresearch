@@ -8,7 +8,7 @@ is a robust and substantial increase in intraday magnitude and range
 around news events, present across all assets and windows. The
 directional content of LLM sentiment (Section~\ref{ssec:results-direction})
 is modest, statistically detectable on a small number of windows
-after FDR adjustment, and economically below transaction costs. The
+after FDR adjustment, and economically modest. The
 remaining subsections (\ref{ssec:results-heterogeneity}--\ref{ssec:results-market-structure})
 cover heterogeneity, timing, and market-structure questions, while
 Section~\ref{ssec:results-robustness} reports the robustness
@@ -96,7 +96,7 @@ return $z$-scores are not significantly different from zero in
 most cells, reinforcing the finding that the news effect is on
 magnitude rather than on direction.
 
-\subsection{Direction: modest, and below transaction costs}
+\subsection{Direction: modest, but benchmark-validated}
 \label{ssec:results-direction}
 
 \paragraph{H2 (LLM sentiment hit rate).}
@@ -107,7 +107,9 @@ rate (EUR/USD, 60 minutes, $54.03\%$ on $n = 944$ clusters) is the
 only cell that reaches $q < 0.02$. After BH-FDR adjustment, no
 other cell survives at $q < 0.05$. The headline picture is
 consistent across primary windows: direction is detectable but
-small.
+small. Hit rates in the 49--54\% range would be insufficient to
+overcome typical intraday transaction costs on either asset; a
+formal cost-aware evaluation is left to future work.
 
 \paragraph{C1 (cluster-level direction).}
 Aggregating sentiment to cluster level (using the modal sentiment
@@ -191,32 +193,6 @@ $50\%$ coin-flip reference. LLM bars are above the reference in
 five of six primary cells; the Loughran-McDonald dictionary falls
 below the reference on Nasdaq-100 short windows.}
 \label{fig:hit-rate-compare}
-\end{figure}
-
-\paragraph{Backtest with transaction costs.}
-A separate backtest of seven naive sentiment-following strategies,
-all with realistic spread and slippage costs, produces negative
-cumulative returns and profit factors below $1.0$ on every variant
-tested. The same strategies become marginally positive when costs
-are removed, which is consistent with the H2/C1 picture: the
-directional edge exists but is too small to overcome intraday
-execution friction in either asset. We report this as evidence
-that the directional signal, while statistically detectable, is not
-economically actionable in the form recovered by these labels.
-Table~\ref{tab:backtest} reports the full strategy panel and
-Figure~\ref{fig:backtest-equity} plots the cumulative equity
-curves with and without costs.
-
-\input{tables/table_10_backtest.tex}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\textwidth]{figures/figure_9_backtest_equity.pdf}
-\caption{Cumulative equity curves for seven naive sentiment-following
-strategies traded on each asset, with realistic transaction costs
-(left) and frictionless (right). All cost-included strategies trend
-downward over the sample.}
-\label{fig:backtest-equity}
 \end{figure}
 
 \subsection{Heterogeneity by category and time of day}

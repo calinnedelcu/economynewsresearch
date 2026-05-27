@@ -30,18 +30,14 @@ should not be interpreted as evidence on consolidated traded volume.
 the event sample.} Section~\ref{ssec:sentiment-validation} reports
 DeepSeek's $84.6\%$ accuracy and $\kappa = 0.72$ on Financial
 PhraseBank \citep{malo2014good}, alongside relative comparisons with
-Loughran-McDonald and FinBERT on our sample. We have prepared a
-200-event subsample for double-coded expert annotation in a
-follow-up study; the infrastructure is in place but the annotation
-is not yet complete. Additionally, the LLM-reported confidence
+Loughran-McDonald and FinBERT on our sample. Double-coded expert
+annotation of the FinancialJuice event sample remains future work
+rather than part of the present release. Additionally, the
+LLM-reported confidence
 field is uncalibrated as a probability of correctness (H6, reported
 here as a null finding) and is not used as a probability anywhere
-in the analysis. Two further null findings should be reported
-explicitly: H12 detects no robust bull-versus-bear asymmetry in the
-price response, and C8 (a cross-model consistency check on
-$n = 200$ events comparing \texttt{deepseek-v4-flash} and
-\texttt{deepseek-v4-pro}) is exploratory and underpowered for the
-inference suggested by the headline numbers.
+in the analysis. A further null finding is that H12 detects no
+robust bull-versus-bear asymmetry in the price response.
 
 \textbf{Fourth, multiple testing and pre-specification.} The
 pipeline runs more than one hundred individual $p$-values across the
@@ -63,8 +59,8 @@ not independent. We address this with cluster-dedupe in
 non-regression tests and cluster-robust standard errors in
 regression tests; both devices may under-correct in long news bursts
 (cluster sizes occasionally exceed twenty events). Suggested
-extensions for follow-up work, in priority order, are: (i)~the
-manual validation and primary-source-timestamp work mentioned above;
+extensions for follow-up work, in priority order, are: (i)~human
+validation on the event sample and primary-source-timestamp work;
 (ii)~cross-feed replication on a second public news service;
 (iii)~cross-asset extension to a basket of individual equities for
 firm-specific news; and (iv)~prompt engineering and LLM ensembling

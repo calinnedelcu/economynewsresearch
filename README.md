@@ -21,7 +21,6 @@ Corectii metodologice aplicate:
 - exista teste pre/post `2026-01-15`, ca verificare impotriva obiectiei de memorization;
 - exista teste targetate pe categorie si regresii multivariate cu controale pentru categorie, surprise, cluster size si lungime headline;
 - exista robustete outlier prin winsorizare 1%;
-- subsetul Flash/Pro consensus este testat separat pe `outputs/compare_models.csv`;
 - regresiile folosesc erori robuste/clusterizate;
 - toate p-value-urile din output primesc q-value Benjamini-Hochberg FDR;
 - H10 include explicit caveat-ul ca volumul Dukascopy este proxy/tick volume.
@@ -68,21 +67,11 @@ Extensii noi pentru paper:
 | Pre/post cutoff | robust | Efectul pe max move ramane pozitiv si dupa `2026-01-15`. |
 | Multivariate controls | important ca aparare | Semnalul de miscare ramane modelabil peste categorie/surprise/lungime; pre-event move si cluster size sunt controale importante. |
 | Outlier robustness | robust | Winsorizarea 1% nu elimina semnalul principal. |
-| Flash/Pro consensus | exploratoriu | Consensus-ul da ferestre directionale interesante, dar esantionul de 200 este prea mic pentru concluzie centrala. |
-
-Raportul HTML curent este generat din CSV-uri, fara rezultate hardcodate:
-
-- `outputs/report.html`
-- `docs/report.html`
 
 Artefactele academice compilate sunt in:
 
 - `paper/main.pdf`
 - `paper/online_appendix.pdf`
-
-Interpretarea non-tehnica pentru traderi este in:
-
-- `trader/Interpretare.md`
 
 ## Structura proiect
 
@@ -90,15 +79,13 @@ Interpretarea non-tehnica pentru traderi este in:
 parse_fj_discord.py     # DiscordChatExporter JSON -> outputs/events.csv
 download_prices.py      # Dukascopy EUR/USD + E_NQ-100 1m -> outputs/prices_*.csv
 sentiment.py            # DeepSeek-compatible API -> outputs/events_sentiment.csv
-compare_models.py       # Flash vs Pro A/B agreement sample
 event_study.py          # event-study core, H1-H14, cluster tests, z-scores, FDR q-values
-make_report.py          # HTML report generated from current outputs
 validate_outputs.py     # sanity checks for methodology-sensitive outputs
-prepare_manual_validation.py  # 200-row sample for human annotation
-score_manual_validation.py    # Cohen's kappa + F1 after labels are filled
 data/                   # local raw JSON exports, gitignored
-outputs/                # generated CSVs, figures, report, cache, gitignored
-docs/                   # project notes and copied report
+outputs/                # generated CSVs, figures, cache, gitignored
+docs/dev_notes/         # historical planning/status notes, not canonical paper sources
+paper/                  # canonical LaTeX paper sources and compiled PDFs
+siat/                   # SIAT competition document builder and deliverables
 ```
 
 ## Setup
@@ -133,22 +120,12 @@ Repo-ul poate fi citat cu metadatele din `CITATION.cff`.
 
 # 5. Validare output-uri
 .venv/Scripts/python.exe validate_outputs.py
-
-# 6. Raport HTML
-.venv/Scripts/python.exe make_report.py --also-copy docs/report.html
-
-# 7. Esantion pentru validare manuala
-.venv/Scripts/python.exe prepare_manual_validation.py
-
-# Dupa ce etichetatorii completeaza CSV-ul:
-.venv/Scripts/python.exe score_manual_validation.py
 ```
 
 Comenzi scurte echivalente, daca `make` este disponibil:
 
 ```bash
 make validate
-make report
 make all-paper
 ```
 
@@ -166,11 +143,8 @@ make all-paper
 - `outputs/pre_post_stability_results.csv`: stabilitate inainte/dupa `2026-01-15`;
 - `outputs/multivariate_results.csv`: regresii multivariate cu controale;
 - `outputs/outlier_robustness_results.csv`: robustete la winsorizare 1%;
-- `outputs/model_consensus_results.csv`: subset Flash/Pro consensus;
 - `outputs/h4_periods.csv`: perioade inchise folosite pentru H4;
-- `outputs/methodology_summary.csv`: setarile metodologice efective;
-- `outputs/report.html`: raport vizual curent.
-- `outputs/manual_validation_sample.csv`: sample pentru validare umana.
+- `outputs/methodology_summary.csv`: setarile metodologice efective.
 
 ## Pentru paper
 
@@ -180,4 +154,4 @@ Nu formula concluziile ca “toate ipotezele au fost confirmate”. Varianta def
 2. sentimentul LLM ofera un edge directional mic, nu un predictor puternic;
 3. pre-event drift-ul sugereaza fie latenta feed-ului, fie informatie deja incorporata de piata;
 4. rezultatele cele mai solide sunt max-move/range, magnitudinea anormala, drift-ul pre-event si persistenta;
-5. rezultatele bazate pe volum, confidence, surprise-level si consensus sample trebuie raportate ca exploratorii.
+5. rezultatele bazate pe volum, confidence si surprise-level trebuie raportate ca exploratorii.

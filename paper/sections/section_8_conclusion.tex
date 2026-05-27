@@ -13,8 +13,9 @@ $1.9\times$ the matched-baseline level on every asset-window cell
 tested, and this finding is stable under winsorisation, multivariate
 controls, and a pre/post-knowledge-cutoff split. The directional
 content of the LLM sentiment is modest ($49$--$54\%$ hit rate
-against realised direction) and below transaction costs in a
-backtest, but the LLM nonetheless outperforms the Loughran-McDonald
+against realised direction) and likely too small to overcome
+typical intraday transaction costs, but the LLM nonetheless
+outperforms the Loughran-McDonald
 baseline by about $1$--$6$ percentage points and is competitive
 with the FinBERT baseline, beating it by up to $4.5$ percentage
 points on the primary windows. The LLM is
@@ -43,8 +44,8 @@ cannot match. For the operational interpretation of the news-flow,
 the magnitude signal is more reliable than the directional signal:
 news events are most defensibly understood as triggers for
 volatility expansion, with direction available only as a weak
-secondary input that does not overcome execution costs in the
-naive specifications tested here.
+secondary input that is unlikely to overcome execution costs on
+its own.
 
 We make the full pipeline---including the validation harness, the
 LLM sentiment cache, the dictionary and FinBERT baselines, and the

@@ -12,7 +12,6 @@ in paper/style_guide_and_improvement_plan.md:
     F6  Sentiment heatmap by category and asset
     F7  Pre vs post-event drift profile
     F8  Sign persistence scatter
-    F9  Backtest equity curve
 
 All figures are saved as PDF (vector) plus PNG (300 dpi) for HTML
 viewing. Default font is sans-serif at 10 pt, grayscale-friendly
@@ -403,59 +402,14 @@ def figure_8_sign_persistence():
     save(fig, "figure_8_sign_persistence")
 
 
-# ---------------------------------------------------------------------------
-# F9: Backtest equity curve
-# ---------------------------------------------------------------------------
-
-
-def figure_9_backtest_equity():
-    print("F9: backtest equity curve ...")
-    trades_path = OUTPUTS / "trader_backtest_trades.csv"
-    nocost_path = OUTPUTS / "trader_backtest_trades_nocost.csv"
-    if not trades_path.exists():
-        print("  skipping F9: trader_backtest_trades.csv not found")
-        return
-    cost = pd.read_csv(trades_path, parse_dates=["entry_time"])
-    nocost = pd.read_csv(nocost_path, parse_dates=["entry_time"]) if nocost_path.exists() else None
-
-    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.8), sharey=False)
-
-    for ax, df, title in zip(axes, [cost, nocost], ["With transaction costs", "Frictionless (no costs)"]):
-        if df is None:
-            ax.text(0.5, 0.5, "no-cost data missing", ha="center", va="center", transform=ax.transAxes)
-            ax.set_title(title); continue
-        # Find the return column (varies by backtest output schema)
-        ret_col = next((c for c in ["return_pct", "trade_return_pct", "pnl_pct"] if c in df.columns), None)
-        if ret_col is None:
-            ax.text(0.5, 0.5, "no return column", ha="center", va="center", transform=ax.transAxes)
-            ax.set_title(title); continue
-        # Equity curve per strategy
-        for strat in df["strategy"].unique():
-            sub = df[df["strategy"] == strat].sort_values("entry_time")
-            if sub.empty: continue
-            equity = sub[ret_col].cumsum()
-            ax.plot(sub["entry_time"], equity, label=strat.replace("_", " "), linewidth=1.0, alpha=0.85)
-        ax.axhline(0, color="black", linewidth=0.6)
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Cumulative return (\\%)")
-        ax.set_title(title)
-        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
-        plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
-    axes[1].legend(loc="lower left", fontsize=7, ncol=2, frameon=False)
-    fig.suptitle("Sentiment-following strategy equity curves", y=1.02)
-    save(fig, "figure_9_backtest_equity")
-
-
 def main():
     print(f"Writing figures to {FIGURES}/ ...")
-    # F2/F4/F5/F6/F8/F9 are fast; F1/F7 require price data and are slower
+    # F2/F4/F5/F6/F8 are fast; F1/F7 require price data and are slower
     figure_2_event_timeline()
     figure_4_range_ratios()
     figure_5_hit_rate_compare()
     figure_6_sentiment_heatmap()
     figure_8_sign_persistence()
-    figure_9_backtest_equity()
     # Slow ones last
     figure_1_event_time_profile()
     figure_7_pre_post_drift()

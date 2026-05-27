@@ -3,7 +3,7 @@
 > **Historical note (2026-05-27).** This audit is retained as a
 > development record. Several Wave 1--4 items identified below have
 > since been implemented in the current `paper/sections/*.tex` sources
-> and compiled PDFs. Treat `docs/STATUS.md`, the generated tables, and
+> and compiled PDFs. Treat `docs/dev_notes/STATUS.md`, the generated tables, and
 > the current LaTeX sources as the authoritative project status.
 
 Document de lucru pentru aducerea paper-ului la nivel de submission top-tier
@@ -259,7 +259,7 @@ subsectiuni. Sau force `[!h]` strict cu `\usepackage{float}` si `[H]`.
 # Partea V: Nice to have (medium-high effort)
 
 ## N1. Online Appendix complet (10-30 pagini)
-- Tabele complete pentru H6, H10, H12, C8
+- Tabele complete pentru H6, H10 si H12
 - Toate ferestrele 1m si 240m
 - Welch t-test ca alternative pentru H1
 - Pe categorii detaliate pentru C4

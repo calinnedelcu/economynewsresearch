@@ -611,76 +611,7 @@ def table_8_pre_post_cutoff():
 
 
 # ---------------------------------------------------------------------------
-# T10: Backtest results with and without costs
-# ---------------------------------------------------------------------------
-
-
-def table_10_backtest():
-    cost_path = OUTPUTS / "trader_backtest_summary.csv"
-    nocost_path = OUTPUTS / "trader_backtest_summary_nocost.csv"
-    if not cost_path.exists() or not nocost_path.exists():
-        print("  skipping table 10: backtest CSVs not found")
-        return
-
-    cost = pd.read_csv(cost_path)
-    nocost = pd.read_csv(nocost_path)
-
-    # Pick top 6 strategies by total return (with costs)
-    # Use strategy + asset as key
-    cost["key"] = cost["strategy"] + "/" + cost["asset"]
-    nocost["key"] = nocost["strategy"] + "/" + nocost["asset"]
-    merged = cost.merge(nocost, on="key", suffixes=("_cost", "_nocost"))
-
-    body = []
-    body.append(r"\begin{table}[!htbp]")
-    body.append(r"\centering")
-    body.append(r"\caption{Naive sentiment-following strategy backtest with and without transaction costs.}")
-    body.append(r"\label{tab:backtest}")
-    body.append(r"\begin{threeparttable}")
-    body.append(r"\footnotesize")
-    body.append(r"\begin{tabular}{lcrcccc}")
-    body.append(r"\toprule")
-    body.append(r"\textbf{Strategy} & \textbf{Asset} & \textbf{$N$ trades} & \textbf{Win \%} & \textbf{Tot.\,ret.\,(\%)} & \textbf{Profit factor} & \textbf{Max DD (\%)} \\")
-    body.append(r"\midrule")
-    body.append(r"\multicolumn{7}{l}{\textit{With realistic spread + slippage}} \\")
-    for _, r in merged.iterrows():
-        body.append(
-            f"{r['strategy_cost'].replace('_', r'\_')} & {r['asset_cost']} & "
-            f"{fmt_int(r['n_trades_cost'])} & "
-            f"{r['win_rate_cost']*100:.1f}\\% & "
-            f"{fmt_num(r['total_return_pct_sum_cost'], 2)} & "
-            f"{fmt_num(r['profit_factor_cost'], 2)} & "
-            f"{fmt_num(r['max_drawdown_pct_sum_cost'], 2)} \\\\"
-        )
-    body.append(r"\addlinespace")
-    body.append(r"\multicolumn{7}{l}{\textit{Without transaction costs (frictionless)}} \\")
-    for _, r in merged.iterrows():
-        body.append(
-            f"{r['strategy_nocost'].replace('_', r'\_')} & {r['asset_nocost']} & "
-            f"{fmt_int(r['n_trades_nocost'])} & "
-            f"{r['win_rate_nocost']*100:.1f}\\% & "
-            f"{fmt_num(r['total_return_pct_sum_nocost'], 2)} & "
-            f"{fmt_num(r['profit_factor_nocost'], 2)} & "
-            f"{fmt_num(r['max_drawdown_pct_sum_nocost'], 2)} \\\\"
-        )
-    body.append(r"\bottomrule")
-    body.append(r"\end{tabular}")
-    body.append(r"\begin{tablenotes}")
-    body.append(r"\footnotesize")
-    body.append(r"\item \textit{Notes.} Seven naive sentiment-following strategies")
-    body.append(r"applied to each event, traded with EUR/USD spot or NDX CFD prices.")
-    body.append(r"Costs include venue-typical spread and slippage. Total return is")
-    body.append(r"the simple sum across trades, in percentage points. Profit factor")
-    body.append(r"is gross profit divided by gross loss; values below 1.0 indicate")
-    body.append(r"a losing strategy.")
-    body.append(r"\end{tablenotes}")
-    body.append(r"\end{threeparttable}")
-    body.append(r"\end{table}")
-    write_table("table_10_backtest", "\n".join(body) + "\n")
-
-
-# ---------------------------------------------------------------------------
-# T11: Winsorisation robustness
+# Winsorisation robustness
 # ---------------------------------------------------------------------------
 
 
@@ -924,7 +855,6 @@ def main():
     table_7_multivariate()
     table_8_pre_post_cutoff()
     table_9_external_benchmark()
-    table_10_backtest()
     table_11_winsorisation()
     # Online Appendix tables
     table_A1_cluster_gap_robustness()

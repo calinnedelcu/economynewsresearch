@@ -151,7 +151,7 @@ common dimensionless scale.
 \label{ssec:hypothesis-tests}
 
 The pipeline runs fourteen pre-specified hypotheses (H1--H14) and
-eight extensions (C1--C8). For reasons of space we report the main
+seven extensions (C1--C7). For reasons of space we report the main
 results in Section~\ref{sec:results} only for those tests that
 produced non-trivial findings; the full set is reproduced in the
 Online Appendix for auditability. Each test is summarised below;
@@ -202,7 +202,7 @@ size, headline length, and pre-event move, with cluster-robust
 standard errors. \textbf{C7} reports winsorisation at the 1\% tails
 as a robustness check against extreme observations.
 
-A further six tests are reported only in Section~\ref{sec:limitations}
+A further five tests are reported only in Section~\ref{sec:limitations}
 or the Online Appendix because they produced null or exploratory
 findings. The LLM auxiliary labels for expected magnitude and
 surprise level (originally H5 and H13) are consolidated as a single
@@ -212,10 +212,7 @@ null finding. The categorical omnibus ANOVA (H7) is subsumed by C4
 and not reported separately. The volume test (H10) is exploratory
 because the Dukascopy NDX series is tick volume rather than
 consolidated exchange volume. The bull-versus-bear asymmetry test
-(H12) is reported as a null finding. Finally, the cross-model
-consensus check (C8) on a 200-event subsample comparing
-\texttt{deepseek-v4-flash} and \texttt{deepseek-v4-pro} is
-exploratory due to subsample size.
+(H12) is reported as a null finding.
 
 \subsection{Identification strategy}
 \label{ssec:identification}
@@ -293,8 +290,8 @@ $q$-values; raw $p$-values are reported for transparency.
 
 The LLM sentiment labels are the central novel input of the
 analysis. To make the LLM choice defensible, we compare it against
-two baselines and reserve a held-out validation sample for human
-adjudication.
+two baselines and evaluate it on an external finance-sentiment
+benchmark.
 
 \paragraph{Dictionary baseline.} We re-classify every event using
 the Loughran-McDonald finance sentiment dictionary
@@ -335,17 +332,9 @@ validates the classifier on an external, peer-reviewed dataset with
 known difficulty levels and without requiring human annotation
 effort on our event sample.
 
-\paragraph{Cross-model consensus.} A 200-event subsample is
-independently classified by \texttt{deepseek-v4-flash} and
-\texttt{deepseek-v4-pro} to measure intra-LLM agreement; this is
-reported as exploratory due to sample size.
-
-\paragraph{Human validation (future work).} A separate sample of 200
-events, stratified across categories and split pre and post the LLM
-knowledge cutoff, is reserved for double-coded expert annotation in
-a follow-up study. The annotation infrastructure
-(\texttt{prepare\_manual\_validation.py},
-\texttt{score\_manual\_validation.py}) is in place. Until that work
-completes, the external-benchmark validation described above and the
-multi-classifier comparison on our sample serve as the primary
+\paragraph{Human validation (future work).} Double-coded expert
+annotation of the FinancialJuice event sample remains a follow-up
+extension rather than part of the present release. Until that work
+is completed, the external-benchmark validation described above and
+the multi-classifier comparison on our sample serve as the primary
 quality evidence for the LLM labels.

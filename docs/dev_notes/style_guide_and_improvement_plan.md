@@ -1,5 +1,8 @@
 # Style Guide Analysis and Improvement Plan
 
+> **Development note.** Historical planning document; the current
+> canonical paper sources are `paper/sections/*.tex`.
+
 Document de lucru. Analizeaza conventiile paper-urilor top-tier in finance
 (Journal of Finance, Journal of Financial Economics, Review of Financial
 Studies) si propune lista concreta de imbunatatiri pentru paper-ul nostru
@@ -174,7 +177,7 @@ Cele mai noi paper-uri include explicit:
 | **Drafturi in Markdown, nu LaTeX/.docx** | Major. JF/JFE/RFS resping non-LaTeX/non-Word. |
 | **Numerotare ecuatii lipseste in §4** | Minor. Cititorul nu poate referi $(4.2)$. |
 | **Lipseste o sectiune de "Validation" formala** pentru LLM | Major dupa ce vine validarea manuala. |
-| **Backtest-ul** este mentionat dar nu prezentat in tabel | Major. |
+| **Componenta operationala de trading** a fost scoasa din versiunea curenta | Rezolvat prin focus pe magnitudine, directie si validare. |
 | **Niciun event-time plot** (avg AR de la -t la +t) | Critic. Este THE figure pentru event studies. |
 | **Densitate citatii in Results = 0** | Minor. Lit review e separat. |
 | **Tabel de variable definitions** lipseste | Important. JF cere asta in appendix. |
@@ -206,14 +209,15 @@ Genereaza 8-12 tabele in LaTeX `booktabs` style. Detalii in
 **Anexa T** mai jos.
 
 ### A3. Figuri principale
-Genereaza 6-9 figuri PDF/EPS din scripturile noastre Python. Detalii
+Genereaza 6-8 figuri PDF/EPS din scripturile noastre Python. Detalii
 in **Anexa F** mai jos. Cea mai importanta: event-time plot
 (figura 1 obligatorie pentru orice event study credibil).
 
-### A4. Manual validation finished + integrated
-Cand vin labelurile, scrie subsectiunea **4.7.x Annotator Agreement**
-in §4 cu Cohen's kappa, F1 LLM vs consens, split pre/post cutoff.
-Add Table cu confusion matrix LLM vs annotator consensus.
+### A4. Human validation future work
+Daca proiectul revine la validare umana pe esantionul FinancialJuice,
+scrie subsectiunea **4.7.x Annotator Agreement** in §4 cu Cohen's
+kappa, F1 LLM vs consens, split pre/post cutoff. Add Table cu
+confusion matrix LLM vs annotator consensus.
 
 ## B. Should-do (high impact, low effort)
 
@@ -301,15 +305,14 @@ CSV-urile noastre cu un script `make_tables.py` nou.
 | T7 | **Multivariate controls** | multivariate_results.csv | Coeficienti pentru categorie, surprise, cluster size, etc. cu robust SE |
 | T8 | **Pre/post cutoff stability** | pre_post_stability_results.csv | Mean |z| in cele doua periode + diff-in-diff |
 | T9 | **Per-category effect sizes** | targeted_category_results.csv | Mean |z| pe (categorie, asset, window) cu n_clusters |
-| T10 | **Backtest with and without costs** | trader_backtest_summary*.csv | Strategy, n_trades, win rate, avg return, total return, profit factor, max DD pentru cele 7 strategii x cu/fara cost |
-| T11 | **Robustness: winsorisation** | outlier_robustness_results.csv | Raw vs winsorised mean si p-value pe primary cells |
+| T10 | **Robustness: winsorisation** | outlier_robustness_results.csv | Raw vs winsorised mean si p-value pe primary cells |
 | TA1-A5 | **Appendix robustness tables** | misc | Full window set (1m, 240m), Welch alternative, alternative cluster gaps |
 
 Pentru fiecare tabel, scrie un mini-script Python `make_table_X.py` care
 citeste CSV-ul si emite LaTeX cu `pandas.to_latex(buf, ...)` cu
 formatare booktabs.
 
-# Anexa F: 9 figuri propuse
+# Anexa F: 8 figuri propuse
 
 | ID | Titlu | Tip | Detalii |
 |---|---|---|---|
@@ -321,8 +324,6 @@ formatare booktabs.
 | F6 | **Sentiment heatmap by category and asset** | Heatmap | Rows: 5 categorii. Columns: 2 (sentiment_usd, sentiment_ndx) x 2 (bull share, bear share). Color = proportion. Ilustreaza cross-asset disagreement. |
 | F7 | **Pre vs post-event drift** | Symmetric line plot | X-axis: -15 to +15 minutes around event. Y-axis: mean |return|. Two assets in panels. Highlight pre-event elevation. **Figura cheie pentru H8.** |
 | F8 | **Sign persistence scatter** | 4-quadrant scatter | X-axis: +15m signed return. Y-axis: +4h signed return. Color = asset. Cuadrantele NE+SW = sign match (57.6%), NW+SE = reversal. |
-| F9 | **Backtest equity curve** | Line plot, 2 panels | Panel A: with costs, Panel B: without costs. X-axis: time. Y-axis: cumulative return. One line per strategy. Anotare drawdowns mari. |
-
 Pentru generarea figurilor, propun un script `make_figures.py` care
 citeste din `outputs/event_study_windows.csv` si emite PDF/PNG la
 `paper/figures/`. Vor folosi `matplotlib` deja in requirements.
@@ -340,12 +341,12 @@ Saptamana 1:
 Saptamana 2:
 - B3 (case studies) - 1 zi
 - B4 (heatmap categorie) - integrat in F6
-- A2.T7-T11 + Anexa - 1 zi
-- A3.F2, F3, F6, F8, F9 - 1 zi
+- A2.T7-T10 + Anexa - 1 zi
+- A3.F2, F3, F6, F8 - 1 zi
 - A1 (LaTeX conversion) - 2-3 zile
 
 Saptamana 3:
-- Cand vin labelurile manuale: A4 (validation section) - 1 zi
+- Daca se reia validarea umana: A4 (validation section) - 1 zi
 - C1-C4 - 2-3 zile in functie de timp
 - Submission housekeeping (cover letter, response to potential
   reviewer questions, online appendix split)
@@ -414,8 +415,8 @@ Pentru implementare end-to-end a planului:
 
 | Fisier | Rol |
 |---|---|
-| `make_tables.py` | Genereaza T1-T11 ca LaTeX si CSV cleaned |
-| `make_figures.py` | Genereaza F1-F9 ca PDF si PNG la 300dpi |
+| `make_tables.py` | Genereaza tabelele LaTeX si CSV cleaned |
+| `make_figures.py` | Genereaza figurile PDF si PNG la 300dpi |
 | `paper/figures/` | Directorul cu PDF-urile figurilor |
 | `paper/tables/` | Directorul cu .tex inserts pentru tabele |
 | `paper/main.tex` | Documentul LaTeX principal care assembleaza |
